@@ -14,7 +14,7 @@ This project was made with the focus on web automation.
 There's user agents and other browser mimic functionality built in and every request can be built exactly how you want it.
 You'll rarely find yourself needing to extend on existing code as most situations are already managed by default and customization options are present. Next to the default plain text & gzip also brotli encoded responses can be handled.
 Cookies are managed per HTTP client instance to allow you to create complete automation flows.
-Below you can find some basic example usage. You should have no troubles with advanced usage as everything is implemented in the default requests & methods. Response bodies can easily be parsed as HTML documents, plain text or JSON.
+Below you can find some basic example usage. You should have no troubles with advanced usage as everything is implemented in the default requests & methods. Response bodies have built-in support for parsing HTML documents, plain text or JSON.
 
 ## Examples
 ### HttpClient constructors
