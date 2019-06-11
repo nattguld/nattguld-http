@@ -1,5 +1,5 @@
 # nattguld-http
-An advanced HTTP library built on raw sockets.
+An advanced HTTP library built on raw sockets with a focus on web automation.
 
 ## Dependencies
 This repository uses a few external dependencies.  
