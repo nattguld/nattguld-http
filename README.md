@@ -14,7 +14,7 @@ This project was made with the focus on web automation.
 There's user agents and other browser mimic functionality built in and every request can be built exactly how you want it.
 You'll rarely find yourself needing to extend on existing code as most situations are already managed by default and customization options are present. Next to the default plain text & gzip also brotli encoded responses can be handled.
 Cookies are managed per HTTP client instance to allow you to create complete automation flows.
-Below you can find some basic example usage. You should have no troubles with advanced usage as everything is implemented in the default requests & methods.
+Below you can find some basic example usage. You should have no troubles with advanced usage as everything is implemented in the default requests & methods. Response bodies can easily be parsed as HTML documents, plain text or JSON.
 
 ## Examples
 ### HttpClient constructors
@@ -77,10 +77,15 @@ new StringBody(EncType.PLAIN_TEXT, xmlStr);
 RequestResponse rr = c.dispatchRequest(new PostRequest("url", body));
 ```
 
-### HttpClient custom headers example
+### Full custom request example
 ```java
 Headers headers = new Headers();
 headers.add("key", "value");
 
-RequestResponse rr = c.dispatchRequest(new Request("url", expectedResponseCode, body, customHeaders));
+RequestResponse rr = c.dispatchRequest(new Request("url", expectedResponseCode, body, customHeaders)
+  .setResponseEncType(EncType.JSON).setXMLHttpRequest(true));
+  
+JsonObject response = rr.getAsJsonElement().getAsJsonObject();
+String code = response.get("code").getAsString();
 ```
+
