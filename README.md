@@ -30,6 +30,13 @@ File dl = c.download(String savePath, Request req);
 RequestResponse rr = c.dispatchRequest(Request req, Request... backgroundRequests);
 ```
 
+#### Use of proxies
+For HTTP(S) proxies you can simply use the proxymanager class to parse your proxy information and obtain a HttpProxy object which you then pass in the HttpClient constructor. For SOCKS (untested) you need to instantiate a HttpProxy object manually.
+```java
+HttpProxy proxy = ProxyManager.parse("host:port");
+HttpProxy proxy = ProxyManager.parse("host:port:user:pass");
+```
+
 ### HttpClient GET & Download example
 ```java
 try (HttpClient c = new HttpClient(ConnectionPolicy.SSL)) {
