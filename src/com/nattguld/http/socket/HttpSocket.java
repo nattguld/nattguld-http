@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
@@ -19,6 +20,7 @@ import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.proxies.HttpProxy;
 import com.nattguld.http.response.decode.impl.HeaderDecoder;
 import com.nattguld.http.ssl.SSLManager;
+import com.nattguld.util.hashing.Hasher;
 
 /**
  * 
@@ -42,10 +44,10 @@ public class HttpSocket {
 	 * 
 	 * @throws Exception
 	 */
-	public static Socket connect(HttpProxy proxy, String host, Browser browser, boolean ssl, int forcePort) throws Exception {
+	public static Socket connect(HttpProxy proxy, String host, Browser browser, boolean ssl, int port) throws Exception {
 		Socket socket = (ssl || (Objects.nonNull(proxy) && proxy.hasAuthentication()))
-				? connectSSL(proxy, host, browser, forcePort) 
-						: connect(proxy, host, browser, forcePort);
+				? connectSSL(proxy, host, browser, port) 
+						: connect(proxy, host, browser, port);
 		socket.setSoTimeout(browser.getConnectionTimeout() * 1000);
 		socket.setKeepAlive(true);
 		socket.setReuseAddress(true);
@@ -68,9 +70,9 @@ public class HttpSocket {
 	 * 
 	 * @throws IOException
 	 */
-	private static Socket connect(HttpProxy proxy, String host, Browser browser, int forcePort) throws IOException {
+	private static Socket connect(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
 		Socket socket = new Socket(Objects.nonNull(proxy) ? proxy.toJavaProxy() : Proxy.NO_PROXY);
-		socket.connect(new InetSocketAddress(host, forcePort == -1 ? 80 : forcePort));
+		socket.connect(new InetSocketAddress(host, port));
 		return socket;
 	}
 	
@@ -87,24 +89,24 @@ public class HttpSocket {
 	 * 
 	 * @throws IOException
 	 */
-	private static Socket connectSSL(HttpProxy proxy, String host, Browser browser, int forcePort) throws IOException {
-		//InetAddress ia = InetAddress.getByName(host);
-		//host = ia.getHostAddress();
+	private static Socket connectSSL(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
+		InetAddress ia = InetAddress.getByName(host);
+		host = ia.getHostAddress();
 		
 		SSLSocketFactory sslSocketFactory = SSLManager.buildSocketFactory();
 		SSLSocket sslSocket = null;
 		
-		if (Objects.nonNull(proxy)) {
+		if (Objects.nonNull(proxy) && !proxy.hasAuthentication()) {
 			Socket tunnel = new Socket(proxy.getHost(), proxy.getPort());
-			doTunnelHandshake(tunnel, proxy, host, browser, forcePort);
 			
-			sslSocket = (SSLSocket)sslSocketFactory.createSocket(tunnel, host, forcePort == -1 ? 80 : forcePort, true);
-			sslSocket.startHandshake();
+			doTunnelHandshake(tunnel, proxy, host, browser, port == 80 ? 443 : port);
+			
+			sslSocket = (SSLSocket)sslSocketFactory.createSocket(tunnel, host, port, true);
 			
 		} else {
-			sslSocket = (SSLSocket)sslSocketFactory.createSocket(host, forcePort == -1 ? 443 : forcePort);
+			sslSocket = (SSLSocket)sslSocketFactory.createSocket(host, port == 80 ? 443 : port);
 		}
-		//sslSocket.startHandshake();
+		sslSocket.startHandshake();
 		return sslSocket;
 	}
 	
@@ -123,17 +125,17 @@ public class HttpSocket {
 	 * 
 	 * @throws IOException
 	 */
-    private static void doTunnelHandshake(Socket tunnel, HttpProxy proxy, String host, Browser browser, int forcePort) throws IOException {
+    private static void doTunnelHandshake(Socket tunnel, HttpProxy proxy, String host, Browser browser, int port) throws IOException {
         OutputStream out = tunnel.getOutputStream();
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), true);
         
-        writer.println("CONNECT " + host + ":" + (forcePort == -1 ? 443 : forcePort) + " " + browser.getHttpVersion().getName());
-        writer.println("Host: " + host + ":" + (forcePort == -1 ? 443 : forcePort));
+        writer.println("CONNECT " + host + ":" + port + " " + browser.getHttpVersion().getName());
+        writer.println("Host: " + host + ":" + port);
         writer.println("User-Agent: " + browser.getUserAgent());
         writer.println("Connection: keep-alive");
         
         if (Objects.nonNull(proxy) && proxy.hasAuthentication()) {
-        	String encoded = new String(java.util.Base64.getEncoder().encode((proxy.getUsername() + ":" + proxy.getPassword()).getBytes())).replace("\r\n", "");
+        	String encoded = Hasher.base64(proxy.getUsername() + ":" + proxy.getPassword());
         	writer.println("Proxy-Authorization: Basic " + encoded);
         }
         writer.println();

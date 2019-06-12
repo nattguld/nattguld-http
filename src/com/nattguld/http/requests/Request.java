@@ -70,9 +70,9 @@ public abstract class Request {
 	private boolean exactEndpoint;
 	
 	/**
-	 * The port to force if any.
+	 * The port.
 	 */
-	private int forcePort = -1;
+	private int port = 80;
 	
 	
 	/**
@@ -203,24 +203,24 @@ public abstract class Request {
 	}
 	
 	/**
-	 * Modifies the port to force.
+	 * Modifies the port.
 	 * 
 	 * @param port The new port.
 	 * 
 	 * @return The request.
 	 */
-	public Request setForcePort(int port) {
-		this.forcePort = port;
+	public Request setPort(int port) {
+		this.port = port;
 		return this;
 	}
 	
 	/**
-	 * Retrieves the port to force.
+	 * Retrieves the port.
 	 * 
 	 * @return The port.
 	 */
-	public int getForcePort() {
-		return forcePort;
+	public int getPort() {
+		return port;
 	}
 	
 	/**

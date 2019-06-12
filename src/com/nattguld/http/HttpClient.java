@@ -82,6 +82,11 @@ public class HttpClient implements AutoCloseable {
 	private ConnectionSecurityHandler conSecHandler;
 	
 	/**
+	 * Whether SSL should be used or not.
+	 */
+	private boolean ssl;
+	
+	/**
 	 * The last GET url.
 	 */
 	private String lastGetUrl;
@@ -254,13 +259,16 @@ public class HttpClient implements AutoCloseable {
 		Headers headers = prepareHeaders(request);
 		RequestResponse rr = null;
 		
+		if (request.getUrl().toLowerCase().startsWith("https://")) {
+			ssl = true;
+		}
 		String host = NetUtil.getDomain(request.getUrl());
 		String endpoint = request.isExactEndpoint() ? request.getUrl() : request.getUrl().substring(request.getUrl().indexOf(host) + host.length(), request.getUrl().length());
 
 		if (NetConfig.getGlobalInstance().isDebug()) {
 			System.out.println("Host: " + host + ", Endpoint: " + endpoint);
 		}
-		try (Socket socket = HttpSocket.connect(proxy, host, browser, hasPolicy(ConnectionPolicy.SSL), request.getForcePort())) {
+		try (Socket socket = HttpSocket.connect(proxy, host, browser, ssl, request.getPort())) {
 			try (BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream())) {
 				PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8").newEncoder()), true) {
 					@Override
@@ -370,15 +378,10 @@ public class HttpClient implements AutoCloseable {
 					System.out.println("Redirect (" + rr.getCode() + ") => " + redirectUrl + " [Last GET: " + lastGetUrl + "][Location: " + rr.getLocation() + "]");	
 				}
 				if (redirectUrl.equals(request.getUrl())) {
-					if (rr.getCode() == 301) {
-						policies.add(ConnectionPolicy.SSL);
-						redirects++;
-						request.setAttempts(0);
-						return dispatchRequest(request);
-					}
-					if (NetConfig.getGlobalInstance().isDebug()) {
-						System.out.println("Redirect => " + redirectUrl + " is same as current url");
-					}
+					ssl = true;
+					redirects++;
+					request.setAttempts(0);
+					return dispatchRequest(request);
 				}
 				redirects++;
 				request.setAttempts(0);

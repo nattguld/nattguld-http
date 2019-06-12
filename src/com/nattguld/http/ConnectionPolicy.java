@@ -9,7 +9,6 @@ package com.nattguld.http;
 public enum ConnectionPolicy {
 	
 	NO_AUTO_REDIRECT,
-	DISABLE_COOKIES,
-	SSL;
+	DISABLE_COOKIES;
 
 }
