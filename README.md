@@ -41,7 +41,7 @@ HttpProxy proxy = new HttpProxy(ProxyType.SOCKS, "host", port, "username", "pass
 
 ### HttpClient GET & Download example
 ```java
-try (HttpClient c = new HttpClient(ConnectionPolicy.SSL)) {
+try (HttpClient c = new HttpClient()) {
     RequestResponse rr = c.dispatchRequest(new GetRequest("https://github.com/randqm/");
     
     if (!rr.validate(200)) {
