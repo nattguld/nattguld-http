@@ -35,6 +35,7 @@ For HTTP(S) proxies you can simply use the proxymanager class to parse your prox
 ```java
 HttpProxy proxy = ProxyManager.parse("host:port");
 HttpProxy proxy = ProxyManager.parse("host:port:user:pass");
+HttpProxy proxy = new HttpProxy(ProxyType.SOCKS, host, port, username, password);
 ```
 
 ### HttpClient GET & Download example
