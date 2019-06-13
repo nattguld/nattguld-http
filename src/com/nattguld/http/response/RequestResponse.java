@@ -1,5 +1,6 @@
 package com.nattguld.http.response;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Objects;
 
 import org.jsoup.Jsoup;
@@ -10,6 +11,7 @@ import com.google.gson.JsonParser;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.response.bodies.IResponseBody;
 import com.nattguld.http.response.bodies.impl.StringResponseBody;
+import com.nattguld.http.util.NetUtil;
 
 /**
  * 
@@ -157,8 +159,17 @@ public class RequestResponse {
      */
     public Document getAsDoc() {
     	if (Objects.isNull(doc)) {
-    		doc = Jsoup.parse(getResponseContent().contains("<html>") 
-    			? getResponseContent() : ("<html><head></head><body>" + getResponseContent() + "</body></html>"));
+    		String baseUri = NetUtil.getBaseUrl(endpoint);
+    		String content = getResponseContent().contains("<html>") 
+        			? getResponseContent() : ("<html><head></head><body>" + getResponseContent() + "</body></html>");
+        			
+    		try {
+				doc = Jsoup.parse(new String(content.getBytes(), "UTF-8"), baseUri);
+				doc.outputSettings().charset("UTF-8");
+			} catch (UnsupportedEncodingException ex) {
+				ex.printStackTrace();
+				doc = Jsoup.parse(content, baseUri);
+			}
     	}
     	return doc;
     }
