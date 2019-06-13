@@ -3,8 +3,8 @@ package com.nattguld.http.proxies;
 import java.util.Arrays;
 import java.util.Objects;
 
-import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.proxies.cfg.ProxyChoice;
+import com.nattguld.http.proxies.cfg.ProxyConfig;
 import com.nattguld.http.proxies.rotating.ProxyGateway;
 import com.nattguld.util.maths.Maths;
 
@@ -33,12 +33,11 @@ public class ProxyManager {
 	 * @return The random imported proxy.
 	 */
 	public static HttpProxy getRandom() {
-		if (NetConfig.getGlobalInstance().getProxyConfigs().getImportedProxies().isEmpty()) {
+		if (ProxyConfig.getConfig().getImportedProxies().isEmpty()) {
 			System.err.println("No proxies imported");
 			return null;
 		}
-		return NetConfig.getGlobalInstance().getProxyConfigs().getImportedProxies().get(Maths.random(
-				NetConfig.getGlobalInstance().getProxyConfigs().getImportedProxies().size()));
+		return ProxyConfig.getConfig().getImportedProxies().get(Maths.random(ProxyConfig.getConfig().getImportedProxies().size()));
 	}
 	
 	/**
@@ -49,7 +48,7 @@ public class ProxyManager {
 	 * @return The proxy.
 	 */
 	public static HttpProxy getByAddress(String address) {
-		return NetConfig.getGlobalInstance().getProxyConfigs().getImportedProxies().stream()
+		return ProxyConfig.getConfig().getImportedProxies().stream()
 				.filter(p -> p.getAddress().equals(address))
 				.findFirst()
 				.orElse(null);
@@ -126,7 +125,7 @@ public class ProxyManager {
 	 * @return The proxy.
 	 */
 	public static HttpProxy getProxyByPreference(ProxyChoice[] choices, String user, boolean ignoreUsers, boolean ignoreCooldowns) {
-		if (NetConfig.getGlobalInstance().getProxyConfigs().isFiddler()) {
+		if (ProxyConfig.getConfig().isFiddler()) {
     		return FIDDLER_PROXY;
     	}
 		if (Objects.isNull(choices) || choices.length < 1) {
@@ -136,8 +135,8 @@ public class ProxyManager {
 		for (ProxyChoice choice : choices) {
 			if (choice == ProxyChoice.ROTATING_RESIDENTIAL || choice == ProxyChoice.ROTATING_DATACENTER) {
 				ProxyGateway pg = choice == ProxyChoice.ROTATING_RESIDENTIAL 
-						? NetConfig.getGlobalInstance().getProxyConfigs().getResidentialGateway()
-						: NetConfig.getGlobalInstance().getProxyConfigs().getDatacenterGateway();
+						? ProxyConfig.getConfig().getResidentialGateway()
+						: ProxyConfig.getConfig().getDatacenterGateway();
 				
 				if (Objects.isNull(pg)) {
 					continue;
@@ -175,13 +174,13 @@ public class ProxyManager {
 	 * @return The proxy choice.
 	 */
 	public static ProxyChoice findBestChoice() {
-		if (Objects.nonNull(NetConfig.getGlobalInstance().getProxyConfigs().getResidentialGateway())) {
+		if (Objects.nonNull(ProxyConfig.getConfig().getResidentialGateway())) {
 			return ProxyChoice.ROTATING_RESIDENTIAL;
 		}
-		if (!NetConfig.getGlobalInstance().getProxyConfigs().getImportedProxies().isEmpty()) {
+		if (!ProxyConfig.getConfig().getImportedProxies().isEmpty()) {
 			return ProxyChoice.IMPORTED;
 		}
-		if (Objects.nonNull(NetConfig.getGlobalInstance().getProxyConfigs().getDatacenterGateway())) {
+		if (Objects.nonNull(ProxyConfig.getConfig().getDatacenterGateway())) {
 			return ProxyChoice.ROTATING_DATACENTER;
 		}
 		return ProxyChoice.DIRECT;

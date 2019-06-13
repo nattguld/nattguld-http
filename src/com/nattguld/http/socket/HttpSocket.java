@@ -150,7 +150,7 @@ public class HttpSocket {
         if (hd.getResponseStatus().getCode() != 200) {
         	throw new IOException("Unable to tunnel through proxy (" + hd.getResponseStatus() + ")");
         }
-        if (NetConfig.getGlobalInstance().isDebug()) {
+        if (NetConfig.getConfig().isDebug()) {
         	System.out.println("Tunneled through proxy for " + host + ":" + 443);
         }
     }

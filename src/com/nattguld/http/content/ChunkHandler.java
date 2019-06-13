@@ -73,8 +73,8 @@ public class ChunkHandler implements AutoCloseable {
 	public ChunkHandler(File file) throws FileNotFoundException {
 		this.file = file;
 		this.fileSize = file.length();
-		this.chunks = fileSize < NetConfig.getGlobalInstance().getChunkSize() ? 1 
-				: (fileSize / NetConfig.getGlobalInstance().getChunkSize()); 
+		this.chunks = fileSize < NetConfig.getConfig().getChunkSize() ? 1 
+				: (fileSize / NetConfig.getConfig().getChunkSize()); 
 		this.bis = new BufferedInputStream(new FileInputStream(file));
 		
 		if (chunks > 1) {
@@ -90,7 +90,7 @@ public class ChunkHandler implements AutoCloseable {
 	 * Prepares the chunk to send.
 	 */
 	public void prepare() {
-		chunkSize = NetConfig.getGlobalInstance().getChunkSize();
+		chunkSize = NetConfig.getConfig().getChunkSize();
 		startRange = chunkId * chunkSize;
 		endRange = (chunkId + 1) * chunkSize;
 		

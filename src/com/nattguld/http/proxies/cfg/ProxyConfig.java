@@ -3,6 +3,11 @@ package com.nattguld.http.proxies.cfg;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.reflect.TypeToken;
+import com.nattguld.data.cfg.Config;
+import com.nattguld.data.cfg.ConfigManager;
+import com.nattguld.data.json.JsonReader;
+import com.nattguld.data.json.JsonWriter;
 import com.nattguld.http.proxies.HttpProxy;
 import com.nattguld.http.proxies.rotating.ProxyGateway;
 
@@ -12,7 +17,7 @@ import com.nattguld.http.proxies.rotating.ProxyGateway;
  *
  */
 
-public class ProxyConfigs {
+public class ProxyConfig extends Config {
 	
 	/**
 	 * Whether fiddler is used for network operations or not.
@@ -39,6 +44,29 @@ public class ProxyConfigs {
 	 */
 	private List<HttpProxy> importedProxies = new ArrayList<>();
 	
+
+	@Override
+	protected void read(JsonReader reader) {
+		this.fiddler = reader.getAsBoolean("fiddler", false);
+		this.fourGMode = reader.getAsBoolean("4G_mode", false);
+		this.datacenterGateway = (ProxyGateway)reader.getAsObject("datacenter_gateway", null);
+		this.residentialGateway = (ProxyGateway)reader.getAsObject("residential_gateway", null);
+		this.importedProxies = reader.getAsList("imported_proxies", new TypeToken<List<HttpProxy>>() {}.getType(), new ArrayList<HttpProxy>());
+	}
+
+	@Override
+	protected void write(JsonWriter writer) {
+		writer.write("fiddler", fiddler);
+		writer.write("4G_mode", fourGMode);
+		writer.write("datacenter_gateway", datacenterGateway);
+		writer.write("residential_gateway", residentialGateway);
+		writer.write("imported_proxies", importedProxies);
+	}
+	
+	@Override
+	protected String getSaveFileName() {
+		return ".proxy_config";
+	}
 	
 	/**
 	 * Modifies the 4G mode.
@@ -137,6 +165,15 @@ public class ProxyConfigs {
 	 */
 	public List<HttpProxy> getImportedProxies() {
 		return importedProxies;
+	}
+	
+	/**
+	 * Retrieves the config.
+	 * 
+	 * @return The config.
+	 */
+	public static ProxyConfig getConfig() {
+		return (ProxyConfig)ConfigManager.getConfig(new ProxyConfig());
 	}
 
 }

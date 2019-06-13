@@ -85,7 +85,7 @@ public class HeaderDecoder implements IResponseDecoder {
 			if (!key.equalsIgnoreCase("Set-Cookie")) {
 				headers.add(key, value);
 				
-				if (NetConfig.getGlobalInstance().isDebug()) {
+				if (NetConfig.getConfig().isDebug()) {
 					System.out.println("RESPONSE-HEADER => " + key + ": " + value);
 				}
 				continue;
@@ -93,7 +93,7 @@ public class HeaderDecoder implements IResponseDecoder {
 			Cookie cookie = extractCookie(value);
 			cookies.add(cookie);
 			
-			if (NetConfig.getGlobalInstance().isDebug()) {
+			if (NetConfig.getConfig().isDebug()) {
 				System.out.println("RESPONSE-COOKIE => " + cookie.getName() + ": " + cookie.getValue());
 			}
 		}

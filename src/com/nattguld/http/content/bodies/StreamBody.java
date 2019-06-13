@@ -41,7 +41,7 @@ public class StreamBody extends ContentBody<File> {
 		}
 		try (FileInputStream fis = new FileInputStream(file)) {
 			int bytesRead = -1;
-			byte[] buffer = new byte[NetConfig.getGlobalInstance().getChunkSize()];
+			byte[] buffer = new byte[NetConfig.getConfig().getChunkSize()];
     	
 			while ((bytesRead = fis.read(buffer)) != -1) {
 				httpStream.write(buffer, 0, bytesRead);

@@ -108,11 +108,11 @@ public class Browser {
 		this.availableScreenResolution = new int[] {!mobile && Maths.random(4) != 1 ? (screenResolution[0] - 64) : screenResolution[0], screenResolution[1]};
 		this.cpuCores = mobile ? NetUtil.getMobileCores() : NetUtil.getDesktopCores();
 		this.language = NetUtil.DEFAULT_BROWSER_LANGUAGE;
-		this.readTimeout = NetConfig.getGlobalInstance().getReadTimeout();
-		this.connectionTimeout = NetConfig.getGlobalInstance().getConnectionTimeout();
+		this.readTimeout = NetConfig.getConfig().getReadTimeout();
+		this.connectionTimeout = NetConfig.getConfig().getConnectionTimeout();
 		this.cache = false;
-		this.doNotTrack = NetConfig.getGlobalInstance().isDoNotTrack();
-		this.debug = NetConfig.getGlobalInstance().isDebug();
+		this.doNotTrack = NetConfig.getConfig().isDoNotTrack();
+		this.debug = NetConfig.getConfig().isDebug();
 		this.httpVersion = HttpVersion.HTTP_1_1;
 		this.connectionAttempts = 6;
 	}

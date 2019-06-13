@@ -61,7 +61,7 @@ public class ResponseBodyParser {
 		}
 		boolean download = Objects.nonNull(request.getSavePath()) && Objects.nonNull(contentType);
 		
-		if (NetConfig.getGlobalInstance().isDebug()) {
+		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Parsing server response body for [" + request.getUrl() + "] with properties [Content-Encoding: " + contentEncoding 
 					+ ", Transfer-Encoding: " + chunkedValue + ", Content-Length: " + bodySize + ", Content-Type: " + contentType + "]");
 		}
@@ -74,7 +74,7 @@ public class ResponseBodyParser {
 			if (Objects.isNull(in)) {
 				System.err.println("Failed to read chunks on " + request.getUrl());
 				
-				if (NetConfig.getGlobalInstance().isDebug()) {
+				if (NetConfig.getConfig().isDebug()) {
 					throw new NetException("Failed to read chunks on " + request.getUrl());
 				}
 				return download ? new FileResponseBody(null) : new StringResponseBody("Failed to read chunks");
@@ -85,7 +85,7 @@ public class ResponseBodyParser {
 			bodySize = in.available();
 		}
 		if (Objects.nonNull(contentLength) && contentLength.equals("0")) {
-			if (NetConfig.getGlobalInstance().isDebug()) {
+			if (NetConfig.getConfig().isDebug()) {
 				System.out.println("Content length is zero for " + request.getUrl() + ", no body to parse");
 			}
 			return new StringResponseBody("");

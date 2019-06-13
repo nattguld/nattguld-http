@@ -216,9 +216,9 @@ public class HttpClient implements AutoCloseable {
 		try {
 			List<Future<RequestResponse>> requestResponses = requestExecutor.invokeAll(requestCallables);
 			
-			if (NetConfig.getGlobalInstance().isDebug()) {
+			if (NetConfig.getConfig().isDebug()) {
 				for (Future<RequestResponse> frr : requestResponses) {
-					if (NetConfig.getGlobalInstance().isDebug()) {
+					if (NetConfig.getConfig().isDebug()) {
 						System.out.println("Background Request [" + frr.get().getEndpoint() + "]: " + frr.get().getCode());
 					}
 				}
@@ -265,7 +265,7 @@ public class HttpClient implements AutoCloseable {
 		String host = NetUtil.getDomain(request.getUrl());
 		String endpoint = request.isExactEndpoint() ? request.getUrl() : request.getUrl().substring(request.getUrl().indexOf(host) + host.length(), request.getUrl().length());
 
-		if (NetConfig.getGlobalInstance().isDebug()) {
+		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Host: " + host + ", Endpoint: " + endpoint);
 		}
 		try (Socket socket = HttpSocket.connect(proxy, host, browser, ssl, request.getPort())) {
@@ -275,7 +275,7 @@ public class HttpClient implements AutoCloseable {
 					public void println(String s) {
 						super.println(s);
 						
-						if (NetConfig.getGlobalInstance().isDebug()) {
+						if (NetConfig.getConfig().isDebug()) {
 							raw.append(s);
 							raw.append(System.lineSeparator());
 						}
@@ -289,7 +289,7 @@ public class HttpClient implements AutoCloseable {
 				writer.println();
 				writer.flush();
 			
-				if (NetConfig.getGlobalInstance().isDebug()) {
+				if (NetConfig.getConfig().isDebug()) {
 					System.err.println(raw.toString());
 				}
 				if (request.hasBody()) { 
@@ -374,7 +374,7 @@ public class HttpClient implements AutoCloseable {
 					}
 					redirectUrl = NetUtil.getBaseUrl(request.getUrl()) + redirectUrl;
 				}
-				if (NetConfig.getGlobalInstance().isDebug()) {
+				if (NetConfig.getConfig().isDebug()) {
 					System.out.println("Redirect (" + rr.getCode() + ") => " + redirectUrl + " [Last GET: " + lastGetUrl + "][Location: " + rr.getLocation() + "]");	
 				}
 				if (redirectUrl.equals(request.getUrl())) {
@@ -433,7 +433,7 @@ public class HttpClient implements AutoCloseable {
 		}
 		File f = (File)((FileResponseBody)rr.getResponseBody()).getBody();
 		
-		if (NetConfig.getGlobalInstance().isDebug()) {
+		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Downloaded " + f.getName() + " in " + ((System.currentTimeMillis() - start) / 1000) + "s");
 		}
 		return f;

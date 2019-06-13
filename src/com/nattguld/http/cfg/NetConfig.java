@@ -1,8 +1,9 @@
 package com.nattguld.http.cfg;
 
-import java.util.Objects;
-
-import com.nattguld.http.proxies.cfg.ProxyConfigs;
+import com.nattguld.data.cfg.Config;
+import com.nattguld.data.cfg.ConfigManager;
+import com.nattguld.data.json.JsonReader;
+import com.nattguld.data.json.JsonWriter;
 
 /**
  * 
@@ -10,17 +11,12 @@ import com.nattguld.http.proxies.cfg.ProxyConfigs;
  *
  */
 
-public class NetConfig {
+public class NetConfig extends Config {
 	
 	/**
 	 * Whether developer mode is enabled or not.
 	 */
-	public static boolean DEVELOPER_MODE = false;
-	
-	/**
-	 * The global instance of the net configurations.
-	 */
-	private static NetConfig globalInstance;
+	public boolean developerMode = false;
 	
 	/**
 	 * Whether to debug network operations or not.
@@ -53,19 +49,65 @@ public class NetConfig {
 	 */
 	private int chunkSize = 8388608;
 	
-	/**
-	 * The proxy configurations.
-	 */
-	private ProxyConfigs proxyConfigs = new ProxyConfigs();
+
+	@Override
+	protected void read(JsonReader reader) {
+		this.developerMode = reader.getAsBoolean("developer_mode", false);
+		this.debug = reader.getAsBoolean("debug", false);
+		this.doNotTrack = reader.getAsBoolean("do_not_track", false);
+		this.transferProgress = reader.getAsBoolean("transfer_progress", true);
+		this.connectionTimeout = reader.getAsInt("connection_timeout", 90);
+		this.readTimeout = reader.getAsInt("read_timeout", 120);
+		this.chunkSize = reader.getAsInt("chunk_size", 8388608);
+	}
+
+	@Override
+	protected void write(JsonWriter writer) {
+		writer.write("developer_mode", developerMode);
+		writer.write("debug", debug);
+		writer.write("do_not_track", doNotTrack);
+		writer.write("transfer_progress", transferProgress);
+		writer.write("connection_timeout", connectionTimeout);
+		writer.write("read_timeout", readTimeout);
+		writer.write("chunk_size", chunkSize);
+	}
 	
+	@Override
+	protected String getSaveFileName() {
+		return ".http_config";
+	}
+	
+	/**
+	 * Modifies whether to use developer mode or not.
+	 * 
+	 * @param developerMode The new state.
+	 * 
+	 * @return The config.
+	 */
+	public NetConfig setDeveloperMode(boolean developerMode) {
+		this.developerMode = developerMode;
+		return this;
+	}
+	
+	/**
+	 * Retrieves whether to use developer mode or not.
+	 * 
+	 * @return The result.
+	 */
+	public boolean isDeveloperMode() {
+		return developerMode;
+	}
 	
 	/**
 	 * Modifies the debug state.
 	 * 
 	 * @param debug The new debug state.
+	 * 
+	 * @return The config.
 	 */
-	public void setDebug(boolean debug) {
+	public NetConfig setDebug(boolean debug) {
 		this.debug = debug;
+		return this;
 	}
 	
 	/**
@@ -81,9 +123,12 @@ public class NetConfig {
 	 * Modifies the do not track state.
 	 * 
 	 * @param doNotTrack The new do not track state.
+	 * 
+	 * @return The config.
 	 */
-	public void setDoNotTrack(boolean doNotTrack) {
+	public NetConfig setDoNotTrack(boolean doNotTrack) {
 		this.doNotTrack = doNotTrack;
+		return this;
 	}
 	
 	/**
@@ -99,9 +144,12 @@ public class NetConfig {
 	 * Modifies the connection timeout.
 	 * 
 	 * @param connectionTimeout The new connection timeout.
+	 * 
+	 * @return The config.
 	 */
-	public void setConnectionTimeout(int connectionTimeout) {
+	public NetConfig setConnectionTimeout(int connectionTimeout) {
 		this.connectionTimeout = connectionTimeout;
+		return this;
 	}
 	
 	/**
@@ -117,9 +165,12 @@ public class NetConfig {
 	 * Modifies the read timeout.
 	 * 
 	 * @param readTimeout The new read timeout.
+	 * 
+	 * @return The config.
 	 */
-	public void setReadTimeout(int readTimeout) {
+	public NetConfig setReadTimeout(int readTimeout) {
 		this.readTimeout = readTimeout;
+		return this;
 	}
 	
 	/**
@@ -135,9 +186,12 @@ public class NetConfig {
 	 * Modifies the chunk size.
 	 * 
 	 * @param chunkSize The chunk size.
+	 * 
+	 * @return The config.
 	 */
-	public void setChunkSize(int chunkSize) {
+	public NetConfig setChunkSize(int chunkSize) {
 		this.chunkSize = chunkSize;
+		return this;
 	}
 	
 	/**
@@ -153,9 +207,12 @@ public class NetConfig {
 	 * Modifies the transfer progress state.
 	 * 
 	 * @param transferProgress The new transfer progress state.
+	 * 
+	 * @return The config.
 	 */
-	public void setTransferProgress(boolean transferProgress) {
+	public NetConfig setTransferProgress(boolean transferProgress) {
 		this.transferProgress = transferProgress;
+		return this;
 	}
 	
 	/**
@@ -168,44 +225,12 @@ public class NetConfig {
 	}
 	
 	/**
-	 * Modifies the proxy configurations.
+	 * Retrieves the config.
 	 * 
-	 * @param proxyConfigs The new proxy configurations.
+	 * @return The config.
 	 */
-	public void setProxyConfigs(ProxyConfigs proxyConfigs) {
-		this.proxyConfigs = proxyConfigs;
-	}
-	
-	/**
-	 * Retrieves the proxy configurations.
-	 * 
-	 * @return The proxy configurations.
-	 */
-	public ProxyConfigs getProxyConfigs() {
-		return proxyConfigs;
-	}
-	
-	/**
-	 * Retrieves the global instance.
-	 * 
-	 * @return The global instance.
-	 */
-	public static NetConfig getGlobalInstance() {
-		return getGlobalInstance(Objects.isNull(globalInstance) ? new NetConfig() : null);
-	}
-	
-	/**
-	 * Retrieves the global instance.
-	 * 
-	 * @param The global instance to set.
-	 * 
-	 * @return The global instance.
-	 */
-	public static NetConfig getGlobalInstance(NetConfig newInstance) {
-		if (Objects.nonNull(newInstance)) {
-			globalInstance = newInstance;
-		}
-		return globalInstance;
+	public static NetConfig getConfig() {
+		return (NetConfig)ConfigManager.getConfig(new NetConfig());
 	}
 
 }

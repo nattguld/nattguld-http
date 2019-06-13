@@ -22,8 +22,8 @@ public class NetException extends IOException {
 	public NetException(String message) {
 		super(message);
 		
-		if (NetConfig.DEVELOPER_MODE) {
-			NetConfig.getGlobalInstance().setDebug(true);
+		if (NetConfig.getConfig().isDeveloperMode()) {
+			NetConfig.getConfig().setDebug(true);
 		}
 	}
 	
@@ -35,8 +35,8 @@ public class NetException extends IOException {
 	public NetException(Exception ex) {
 		super(ex);
 		
-		if (NetConfig.DEVELOPER_MODE) {
-			NetConfig.getGlobalInstance().setDebug(true);
+		if (NetConfig.getConfig().isDeveloperMode()) {
+			NetConfig.getConfig().setDebug(true);
 		}
 	}
 	

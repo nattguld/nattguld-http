@@ -69,7 +69,7 @@ public class StringInterpretor extends ResponseInterpretor<StringResponseBody> {
 	public StringResponseBody interpret(InputStream in) throws IOException {
 		IResponseDecoder decoder = Objects.nonNull(contentEncoding) ? decoders.get(contentEncoding) : null;
 
-		if (NetConfig.getGlobalInstance().isDebug()) {
+		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Interpret decoder " + decoder + " for content type " + contentType);
 		}
 		StringBuilder sb = new StringBuilder();
@@ -86,7 +86,7 @@ public class StringInterpretor extends ResponseInterpretor<StringResponseBody> {
 				}
 			}
 		}
-		if (NetConfig.getGlobalInstance().isDebug()) {
+		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Body interpretation successfull");
 		}
 		return new StringResponseBody(sb.toString());
