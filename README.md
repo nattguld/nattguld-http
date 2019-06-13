@@ -7,6 +7,7 @@ This repository uses the following dependencies:
 **gson:** For parsing JSON payloads. https://github.com/google/gson  
 **jsoup:** For parsing HTML. https://github.com/jhy/jsoup  
 **nattguld-util:** For various helper methods. https://github.com/nattguld/nattguld-util  
+**nattguld-data:** For saving configurations (optional) https://github.com/nattguld/nattguld-data  
 
 ## About
 Nattguld HTTP is a library built on raw sockets for maximum customizibility.
@@ -15,6 +16,8 @@ There's user agents and other browser mimic functionality built in and every req
 You'll rarely find yourself needing to extend on existing code as most situations are already managed by default and customization options are present. Next to the default plain text & gzip also brotli encoded responses can be handled.
 Cookies are managed per HTTP client instance to allow you to create complete automation flows.
 Below you can find some basic example usage. You should have no troubles with advanced usage as everything is implemented in the default requests & methods. Response bodies have built-in support for parsing HTML documents, plain text or JSON.
+
+For saving configurations for software deployment the library depends on the nattguld-data library. This can very easily be stripped out if you don't need or want this.
 
 ## Examples
 ### HttpClient constructors
