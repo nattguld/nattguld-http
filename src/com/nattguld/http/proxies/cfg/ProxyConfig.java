@@ -49,8 +49,8 @@ public class ProxyConfig extends Config {
 	protected void read(JsonReader reader) {
 		this.fiddler = reader.getAsBoolean("fiddler", false);
 		this.fourGMode = reader.getAsBoolean("4G_mode", false);
-		this.datacenterGateway = (ProxyGateway)reader.getAsObject("datacenter_gateway", null);
-		this.residentialGateway = (ProxyGateway)reader.getAsObject("residential_gateway", null);
+		this.datacenterGateway = (ProxyGateway)reader.getAsObject("datacenter_gateway", ProxyGateway.class, null);
+		this.residentialGateway = (ProxyGateway)reader.getAsObject("residential_gateway", ProxyGateway.class, null);
 		this.importedProxies = reader.getAsList("imported_proxies", new TypeToken<List<HttpProxy>>() {}.getType(), new ArrayList<HttpProxy>());
 	}
 
