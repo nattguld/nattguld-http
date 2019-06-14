@@ -57,6 +57,11 @@ import com.nattguld.http.util.NetUtil;
 public class HttpClient implements AutoCloseable {
 	
 	/**
+	 * The data counter.
+	 */
+	private final DataCounter dataCounter;
+	
+	/**
 	 * The proxy to use.
 	 */
 	private final HttpProxy proxy;
@@ -149,6 +154,7 @@ public class HttpClient implements AutoCloseable {
 	 * @param policies The connection policies.
 	 */
 	public HttpClient(Browser browser, HttpProxy proxy, ConnectionPolicy... policies) {
+		this.dataCounter = new DataCounter();
 		this.proxy = proxy;
 		this.browser = browser;
 		this.cookieJar = new CookieJar();

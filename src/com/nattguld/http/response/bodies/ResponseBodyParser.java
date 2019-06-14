@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.nattguld.http.cfg.NetConfig;
+import com.nattguld.http.content.bodies.StringBody;
 import com.nattguld.http.exceptions.NetException;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.requests.Request;
@@ -42,6 +43,9 @@ public class ResponseBodyParser {
 	 * @throws IOException
 	 */
 	public static IResponseBody<? extends Object> parseResponseBody(Request request, Headers responseHeaders, InputStream in) throws IOException {
+		if (!request.isDecodeBody()) {
+			return new StringResponseBody("Body decoding is turned off for this request");
+		}
 		String contentEncoding = responseHeaders.getValueIgnoreCase("Content-Encoding"); //The content encoding of the response, will be null when it's plain text
 		String contentLength = responseHeaders.getValueIgnoreCase("Content-Length");
 		String contentType = responseHeaders.getValueIgnoreCase("Content-Type");

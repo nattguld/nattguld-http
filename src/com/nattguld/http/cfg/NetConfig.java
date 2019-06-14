@@ -49,6 +49,11 @@ public class NetConfig extends Config {
 	 */
 	private int chunkSize = 8388608;
 	
+	/**
+	 * Whether save data mode is used or not.
+	 */
+	private boolean saveDataMode;
+	
 
 	@Override
 	protected void read(JsonReader reader) {
@@ -59,6 +64,7 @@ public class NetConfig extends Config {
 		this.connectionTimeout = reader.getAsInt("connection_timeout", 90);
 		this.readTimeout = reader.getAsInt("read_timeout", 120);
 		this.chunkSize = reader.getAsInt("chunk_size", 8388608);
+		this.saveDataMode = reader.getAsBoolean("save_data_mode", saveDataMode);
 	}
 
 	@Override
@@ -70,11 +76,33 @@ public class NetConfig extends Config {
 		writer.write("connection_timeout", connectionTimeout);
 		writer.write("read_timeout", readTimeout);
 		writer.write("chunk_size", chunkSize);
+		writer.write("save_data_mode", saveDataMode);
 	}
 	
 	@Override
 	protected String getSaveFileName() {
 		return ".http_config";
+	}
+	
+	/**
+	 * Modifies whether to use save data mode or not.
+	 * 
+	 * @param saveDataMode The new state.
+	 * 
+	 * @return The config.
+	 */
+	public NetConfig setSaveDataMode(boolean saveDataMode) {
+		this.saveDataMode = saveDataMode;
+		return this;
+	}
+	
+	/**
+	 * Retrieves whether to use save data mode or not.
+	 * 
+	 * @return The result.
+	 */
+	public boolean isSaveDataMode() {
+		return saveDataMode;
 	}
 	
 	/**

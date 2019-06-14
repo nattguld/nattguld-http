@@ -2,6 +2,7 @@ package com.nattguld.http.requests;
 
 import java.util.Objects;
 
+import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.content.EncType;
 import com.nattguld.http.headers.Headers;
 
@@ -64,6 +65,11 @@ public abstract class Request {
 	private RequestProgressListener progressListener;
 	
 	/**
+	 * Whether to decode the body or not.
+	 */
+	private boolean decodeBody;
+	
+	/**
 	 * Whether to use the exact endpoint or not.
 	 */
 	@Deprecated
@@ -92,6 +98,7 @@ public abstract class Request {
 		this.code = code;
 		this.headers = Objects.isNull(headers) ? new Headers() : headers;
 		this.responseEncType = EncType.URL_ENCODED;
+		this.decodeBody = !NetConfig.getConfig().isSaveDataMode();
 	}
 	
 	/**
@@ -297,6 +304,27 @@ public abstract class Request {
 	 */
 	public RequestProgressListener getProgressListener() {
 		return progressListener;
+	}
+	
+	/**
+	 * Modifies whether to decode the body or not.
+	 * 
+	 * @param decodeBody The new state.
+	 * 
+	 * @return The request.
+	 */
+	public Request setDecodeBody(boolean decodeBody) {
+		this.decodeBody = decodeBody;
+		return this;
+	}
+	
+	/**
+	 * Retrieves whether to decode the body or not.
+	 * 
+	 * @return The result.
+	 */
+	public boolean isDecodeBody() {
+		return decodeBody;
 	}
 
 }
