@@ -2,6 +2,7 @@ package com.nattguld.http.requests;
 
 import java.util.Objects;
 
+import com.nattguld.http.DataCounter;
 import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.content.EncType;
 import com.nattguld.http.headers.Headers;
@@ -48,6 +49,11 @@ public abstract class Request {
 	 * Whether the request is an XML HTTP request.
 	 */
 	private boolean xmlHttpRequest;
+	
+	/**
+	 * The data counter.
+	 */
+	private final DataCounter dataCounter;
 	
 	/**
 	 * The cache control.
@@ -99,6 +105,7 @@ public abstract class Request {
 		this.headers = Objects.isNull(headers) ? new Headers() : headers;
 		this.responseEncType = EncType.URL_ENCODED;
 		this.decodeBody = !NetConfig.getConfig().isSaveDataMode();
+		this.dataCounter = new DataCounter();
 	}
 	
 	/**
@@ -325,6 +332,15 @@ public abstract class Request {
 	 */
 	public boolean isDecodeBody() {
 		return decodeBody;
+	}
+	
+	/**
+	 * Retrieves the data counter.
+	 * 
+	 * @return The data counter.
+	 */
+	public DataCounter getDataCounter() {
+		return dataCounter;
 	}
 
 }

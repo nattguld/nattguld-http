@@ -30,6 +30,7 @@ import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.content.cookies.CookieJar;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.proxies.HttpProxy;
+import com.nattguld.http.proxies.cfg.ProxyConfig;
 import com.nattguld.http.proxies.rotating.ProxyUsageMonitor;
 import com.nattguld.http.proxies.rotating.RotatingProxy;
 import com.nattguld.http.requests.ContentRequest;
@@ -46,6 +47,8 @@ import com.nattguld.http.response.bodies.impl.StringResponseBody;
 import com.nattguld.http.response.decode.impl.HeaderDecoder;
 import com.nattguld.http.sec.ConnectionSecurityHandler;
 import com.nattguld.http.socket.HttpSocket;
+import com.nattguld.http.stream.CountInputStream;
+import com.nattguld.http.stream.CountOutputStream;
 import com.nattguld.http.util.NetUtil;
 
 /**
@@ -265,9 +268,6 @@ public class HttpClient implements AutoCloseable {
 		Headers headers = prepareHeaders(request);
 		RequestResponse rr = null;
 		
-		if (request.getUrl().toLowerCase().startsWith("https://")) {
-			ssl = true;
-		}
 		String host = NetUtil.getDomain(request.getUrl());
 		String endpoint = request.isExactEndpoint() ? request.getUrl() : request.getUrl().substring(request.getUrl().indexOf(host) + host.length(), request.getUrl().length());
 
@@ -275,7 +275,7 @@ public class HttpClient implements AutoCloseable {
 			System.out.println("Host: " + host + ", Endpoint: " + endpoint);
 		}
 		try (Socket socket = HttpSocket.connect(proxy, host, browser, ssl, request.getPort())) {
-			try (BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream())) {
+			try (BufferedOutputStream out = new BufferedOutputStream(new CountOutputStream(socket.getOutputStream(), request.getDataCounter()))) {
 				PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8").newEncoder()), true) {
 					@Override
 					public void println(String s) {
@@ -310,7 +310,7 @@ public class HttpClient implements AutoCloseable {
 				ResponseStatus rs = null;
 				Headers responseHeaders = new Headers();
 			
-				try (InputStream in = socket.getInputStream()) {
+				try (InputStream in = new CountInputStream(socket.getInputStream(), request.getDataCounter())) {
 					HeaderDecoder hd = new HeaderDecoder();
 					hd.decode(in);
 
@@ -327,6 +327,17 @@ public class HttpClient implements AutoCloseable {
 					rr = new RequestResponse(request.getUrl(), rs, responseBody, responseHeaders);
 				}
 				writer.close();
+
+				if (NetConfig.getConfig().isDebug()) {
+					System.out.println("Request Data [Down: " + request.getDataCounter().getDown() + ", Up: " + request.getDataCounter().getUp());
+					System.out.println("Session Data [Down: " + dataCounter.getDown() + ", Up: " + dataCounter.getUp());
+				}
+				if (ProxyConfig.getConfig().isCellularMode()) {
+					NetConfig.getConfig().getCellularDataCounter().addUp(request.getDataCounter().getUp());
+					NetConfig.getConfig().getCellularDataCounter().addDown(request.getDataCounter().getDown());
+				}
+				dataCounter.addUp(request.getDataCounter().getUp());
+				dataCounter.addDown(request.getDataCounter().getDown());
 			}
 		} catch (UnknownHostException ex) {
 			System.err.println("Unknown host " + host);
@@ -341,7 +352,7 @@ public class HttpClient implements AutoCloseable {
 			System.err.println("Failed to establish connection. Timed out.");
 			
 		} catch (SSLHandshakeException ex) {
-			ex.printStackTrace();
+			//ex.printStackTrace();
 			
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -352,6 +363,8 @@ public class HttpClient implements AutoCloseable {
 		if (rr == null) {
 			return dispatchRequest(request);
 		}
+		System.out.println(rr.getCode());
+		
 		if (rr.getCode() == 400 && request.getCode() != 400 && !request.getUrl().endsWith("/")) {
 			System.err.println("Bad request, maybe the url needs to end with a slash? (/)");
 		}

@@ -4,6 +4,7 @@ import com.nattguld.data.cfg.Config;
 import com.nattguld.data.cfg.ConfigManager;
 import com.nattguld.data.json.JsonReader;
 import com.nattguld.data.json.JsonWriter;
+import com.nattguld.http.DataCounter;
 
 /**
  * 
@@ -50,6 +51,11 @@ public class NetConfig extends Config {
 	private int chunkSize = 8388608;
 	
 	/**
+	 * The data counter for 4G connections.
+	 */
+	private DataCounter cellularDataCounter;
+	
+	/**
 	 * Whether save data mode is used or not.
 	 */
 	private boolean saveDataMode;
@@ -64,6 +70,7 @@ public class NetConfig extends Config {
 		this.connectionTimeout = reader.getAsInt("connection_timeout", 90);
 		this.readTimeout = reader.getAsInt("read_timeout", 120);
 		this.chunkSize = reader.getAsInt("chunk_size", 8388608);
+		this.cellularDataCounter = (DataCounter)reader.getAsObject("data_counter_cellular", DataCounter.class, new DataCounter());
 		this.saveDataMode = reader.getAsBoolean("save_data_mode", saveDataMode);
 	}
 
@@ -76,12 +83,22 @@ public class NetConfig extends Config {
 		writer.write("connection_timeout", connectionTimeout);
 		writer.write("read_timeout", readTimeout);
 		writer.write("chunk_size", chunkSize);
+		writer.write("data_counter_cellular", cellularDataCounter);
 		writer.write("save_data_mode", saveDataMode);
 	}
 	
 	@Override
 	protected String getSaveFileName() {
 		return ".http_config";
+	}
+	
+	/**
+	 * Retrieves the cellular data counter.
+	 * 
+	 * @return The data counter.
+	 */
+	public DataCounter getCellularDataCounter() {
+		return cellularDataCounter;
 	}
 	
 	/**

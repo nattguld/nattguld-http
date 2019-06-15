@@ -20,6 +20,30 @@ public class DataCounter {
 	
 	
 	/**
+	 * Modifies the down data.
+	 * 
+	 * @param down The new amount.
+	 * 
+	 * @return The down data.
+	 */
+	public long setDown(long down) {
+		this.down = down;
+		return down;
+	}
+	
+	/**
+	 * Modifies the up data.
+	 * 
+	 * @param up The new amount.
+	 * 
+	 * @return The up data.
+	 */
+	public long setUp(long up) {
+		this.up = up;
+		return up;
+	}
+	
+	/**
 	 * Adds downloaded data.
 	 * 
 	 * @param amount The amount.

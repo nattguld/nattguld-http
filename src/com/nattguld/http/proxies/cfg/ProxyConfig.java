@@ -25,9 +25,9 @@ public class ProxyConfig extends Config {
 	private boolean fiddler;
 	
 	/**
-	 * The 4G mode.
+	 * Whether cellular data is used or not.
 	 */
-	private boolean fourGMode;
+	private boolean cellularMode;
 	
 	/**
 	 * The datacenter proxy gateway.
@@ -48,7 +48,7 @@ public class ProxyConfig extends Config {
 	@Override
 	protected void read(JsonReader reader) {
 		this.fiddler = reader.getAsBoolean("fiddler", false);
-		this.fourGMode = reader.getAsBoolean("4G_mode", false);
+		this.cellularMode = reader.has("4G_mode") ? reader.getAsBoolean("4G_mode") : reader.getAsBoolean("cellular_mode", false);
 		this.datacenterGateway = (ProxyGateway)reader.getAsObject("datacenter_gateway", ProxyGateway.class, null);
 		this.residentialGateway = (ProxyGateway)reader.getAsObject("residential_gateway", ProxyGateway.class, null);
 		this.importedProxies = reader.getAsList("imported_proxies", new TypeToken<List<HttpProxy>>() {}.getType(), new ArrayList<HttpProxy>());
@@ -57,7 +57,7 @@ public class ProxyConfig extends Config {
 	@Override
 	protected void write(JsonWriter writer) {
 		writer.write("fiddler", fiddler);
-		writer.write("4G_mode", fourGMode);
+		writer.write("cellular_mode", cellularMode);
 		writer.write("datacenter_gateway", datacenterGateway);
 		writer.write("residential_gateway", residentialGateway);
 		writer.write("imported_proxies", importedProxies);
@@ -69,21 +69,21 @@ public class ProxyConfig extends Config {
 	}
 	
 	/**
-	 * Modifies the 4G mode.
+	 * Modifies the cellularMode mode.
 	 * 
-	 * @param fourGMode The new mode.
+	 * @param cellularMode The new mode.
 	 */
-	public void set4GMode(boolean fourGMode) {
-		this.fourGMode = fourGMode;
+	public void setCellularMode(boolean cellularMode) {
+		this.cellularMode = cellularMode;
 	}
 	
 	/**
-	 * Retrieves the 4G mode.
+	 * Retrieves the cellularMode mode.
 	 * 
-	 * @return The 4G mode.
+	 * @return The cellularMode mode.
 	 */
-	public boolean is4GMode() {
-		return fourGMode;
+	public boolean isCellularMode() {
+		return cellularMode;
 	}
 	
 	/**

@@ -10,7 +10,9 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -29,6 +31,16 @@ import com.nattguld.util.hashing.Hasher;
  */
 
 public class HttpSocket {
+	
+	/**
+	 * The maximum amount of resolve hostname entries to keep.
+	 */
+	private static final int MAX_RESOLVE_HOSTNAME_SIZE = 1000;
+	
+	/**
+	 * Holds the hosts that need their host name resolved.
+	 */
+	private static List<String> resolveHostname = new CopyOnWriteArrayList<>();
 	
 	
 	/**
@@ -71,6 +83,11 @@ public class HttpSocket {
 	 * @throws IOException
 	 */
 	private static Socket connect(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
+		System.out.println("Regular [" + host + "][" + port + "][" + proxy + "]");
+		
+		//InetAddress ia = InetAddress.getByName(host);
+		//host = ia.getHostAddress();
+		
 		Socket socket = new Socket(Objects.nonNull(proxy) ? proxy.toJavaProxy() : Proxy.NO_PROXY);
 		socket.connect(new InetSocketAddress(host, port));
 		return socket;
@@ -90,23 +107,45 @@ public class HttpSocket {
 	 * @throws IOException
 	 */
 	private static Socket connectSSL(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
-		InetAddress ia = InetAddress.getByName(host);
-		host = ia.getHostAddress();
+		System.out.println("connect SSL [" + host + "][" + port + "][" + proxy + "]");
+		String contactHost = host;
 		
+		if (resolveHostname.contains(host)) {
+			InetAddress ia = InetAddress.getByName(contactHost);
+			contactHost = ia.getHostAddress();
+		}
 		SSLSocketFactory sslSocketFactory = SSLManager.buildSocketFactory();
 		SSLSocket sslSocket = null;
 		
 		if (Objects.nonNull(proxy) && !proxy.hasAuthentication()) {
+			System.out.println("SSL proxy with no auth");
+			
 			Socket tunnel = new Socket(proxy.getHost(), proxy.getPort());
 			
-			doTunnelHandshake(tunnel, proxy, host, browser, port == 80 ? 443 : port);
+			doTunnelHandshake(tunnel, proxy, contactHost, browser, port == 80 ? 443 : port);
 			
-			sslSocket = (SSLSocket)sslSocketFactory.createSocket(tunnel, host, port, true);
+			sslSocket = (SSLSocket)sslSocketFactory.createSocket(tunnel, contactHost, port, true);
 			
 		} else {
-			sslSocket = (SSLSocket)sslSocketFactory.createSocket(host, port == 80 ? 443 : port);
+			System.out.println("SSL no proxy or proxy with auth");
+			
+			sslSocket = (SSLSocket)sslSocketFactory.createSocket(contactHost, port == 80 ? 443 : port);
 		}
-		sslSocket.startHandshake();
+		try {
+			sslSocket.startHandshake();
+			
+		} catch (Exception ex) {
+			if (resolveHostname.contains(host)) {
+				ex.printStackTrace();
+				return null;
+			}
+			resolveHostname.add(host);
+			
+			if (resolveHostname.size() > MAX_RESOLVE_HOSTNAME_SIZE) {
+				resolveHostname.remove(0);
+			}
+			return connectSSL(proxy, host, browser, port);
+		}
 		return sslSocket;
 	}
 	
