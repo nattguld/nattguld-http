@@ -352,7 +352,7 @@ public class HttpClient implements AutoCloseable {
 			System.err.println("Failed to establish connection. Timed out.");
 			
 		} catch (SSLHandshakeException ex) {
-			//ex.printStackTrace();
+			ex.printStackTrace();
 			
 		} catch (IOException ex) {
 			ex.printStackTrace();
@@ -363,8 +363,6 @@ public class HttpClient implements AutoCloseable {
 		if (rr == null) {
 			return dispatchRequest(request);
 		}
-		System.out.println(rr.getCode());
-		
 		if (rr.getCode() == 400 && request.getCode() != 400 && !request.getUrl().endsWith("/")) {
 			System.err.println("Bad request, maybe the url needs to end with a slash? (/)");
 		}

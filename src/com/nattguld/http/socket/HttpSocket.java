@@ -83,8 +83,6 @@ public class HttpSocket {
 	 * @throws IOException
 	 */
 	private static Socket connect(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
-		System.out.println("Regular [" + host + "][" + port + "][" + proxy + "]");
-		
 		//InetAddress ia = InetAddress.getByName(host);
 		//host = ia.getHostAddress();
 		
@@ -107,7 +105,6 @@ public class HttpSocket {
 	 * @throws IOException
 	 */
 	private static Socket connectSSL(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
-		System.out.println("connect SSL [" + host + "][" + port + "][" + proxy + "]");
 		String contactHost = host;
 		
 		if (resolveHostname.contains(host)) {
@@ -118,8 +115,6 @@ public class HttpSocket {
 		SSLSocket sslSocket = null;
 		
 		if (Objects.nonNull(proxy) && !proxy.hasAuthentication()) {
-			System.out.println("SSL proxy with no auth");
-			
 			Socket tunnel = new Socket(proxy.getHost(), proxy.getPort());
 			
 			doTunnelHandshake(tunnel, proxy, contactHost, browser, port == 80 ? 443 : port);
@@ -127,8 +122,6 @@ public class HttpSocket {
 			sslSocket = (SSLSocket)sslSocketFactory.createSocket(tunnel, contactHost, port, true);
 			
 		} else {
-			System.out.println("SSL no proxy or proxy with auth");
-			
 			sslSocket = (SSLSocket)sslSocketFactory.createSocket(contactHost, port == 80 ? 443 : port);
 		}
 		try {
