@@ -117,12 +117,12 @@ public class HttpSocket {
 		if (Objects.nonNull(proxy) && !proxy.hasAuthentication()) {
 			Socket tunnel = new Socket(proxy.getHost(), proxy.getPort());
 			
-			doTunnelHandshake(tunnel, proxy, contactHost, browser, port == 80 ? 443 : port);
+			doTunnelHandshake(tunnel, proxy, contactHost, browser, 443);
 			
 			sslSocket = (SSLSocket)sslSocketFactory.createSocket(tunnel, contactHost, port, true);
 			
 		} else {
-			sslSocket = (SSLSocket)sslSocketFactory.createSocket(contactHost, port == 80 ? 443 : port);
+			sslSocket = (SSLSocket)sslSocketFactory.createSocket(contactHost, 443);
 		}
 		try {
 			sslSocket.startHandshake();
@@ -130,7 +130,7 @@ public class HttpSocket {
 		} catch (Exception ex) {
 			if (resolveHostname.contains(host)) {
 				ex.printStackTrace();
-				return null;
+				return sslSocket;
 			}
 			resolveHostname.add(host);
 			
