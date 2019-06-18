@@ -522,6 +522,26 @@ public class HttpClient implements AutoCloseable {
 		}
 		return headers;
 	}
+	
+	/**
+	 * Fetches the IP of the client session.
+	 * 
+	 * @return The IP.
+	 */
+	public String fetchIP() {
+		try {
+			RequestResponse rr = dispatchRequest(new GetRequest("https://api.ipify.org/"));
+		
+			if (!rr.validate()) {
+				return "Failed to fetch IP";
+			}
+			return rr.getResponseContent();
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return "Failed to fetch IP";
+		}
+	}
 
 	/**
 	 * Retrieves the connection security handler.

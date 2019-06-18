@@ -1,5 +1,7 @@
 package com.nattguld.http;
 
+import java.math.BigDecimal;
+
 /**
  * 
  * @author randqm
@@ -91,6 +93,27 @@ public class DataCounter {
 	public void reset() {
 		this.down = 0L;
 		this.up = 0L;
+	}
+	
+	/**
+	 * Retrieves the readable format for a given amount of bytes.
+	 * 
+	 * @param bytes The bytes.
+	 * 
+	 * @return The readable format.
+	 */
+	public static String getReadableFormat(long bytes) {
+		BigDecimal bytesBd = new BigDecimal(bytes);
+				
+		if (bytesBd.longValue() < 1024) {
+			return bytesBd.longValue() + " b";
+		}
+		BigDecimal kiloBytes = new BigDecimal((bytesBd.doubleValue() / (double)1024));
+		
+		if (bytesBd.longValue() < 1048576) {
+			return kiloBytes.longValue() + " Kb";
+		}
+		return new BigDecimal((kiloBytes.doubleValue() / (double)1024)).longValue() + " Mb";
 	}
 
 }

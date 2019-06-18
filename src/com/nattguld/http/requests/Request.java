@@ -3,7 +3,6 @@ package com.nattguld.http.requests;
 import java.util.Objects;
 
 import com.nattguld.http.DataCounter;
-import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.content.EncType;
 import com.nattguld.http.headers.Headers;
 
@@ -104,7 +103,7 @@ public abstract class Request {
 		this.code = code;
 		this.headers = Objects.isNull(headers) ? new Headers() : headers;
 		this.responseEncType = EncType.URL_ENCODED;
-		this.decodeBody = !NetConfig.getConfig().isSaveDataMode();
+		this.decodeBody = true;
 		this.dataCounter = new DataCounter();
 	}
 	
