@@ -9,8 +9,16 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import com.google.gson.JsonObject;
+import com.nattguld.http.HttpClient;
 import com.nattguld.http.browser.Browser;
+import com.nattguld.http.content.EncType;
+import com.nattguld.http.content.cookies.Cookie;
+import com.nattguld.http.headers.Headers;
 import com.nattguld.http.proxies.HttpProxy;
+import com.nattguld.http.proxies.ProxyManager;
+import com.nattguld.http.requests.impl.GetRequest;
+import com.nattguld.http.response.RequestResponse;
 import com.nattguld.http.response.decode.impl.HeaderDecoder;
 
 /**
@@ -20,6 +28,7 @@ import com.nattguld.http.response.decode.impl.HeaderDecoder;
  */
 
 public class WebSocket {
+
 	
 	
     private static void doTunnelHandshake(Socket tunnel, HttpProxy proxy, String host, int port, Browser browser) throws IOException {

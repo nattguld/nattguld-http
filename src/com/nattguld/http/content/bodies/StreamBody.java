@@ -7,7 +7,9 @@ import java.io.IOException;
 import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.content.ContentBody;
 import com.nattguld.http.content.EncType;
+import com.nattguld.http.headers.Headers;
 import com.nattguld.http.stream.HTTPOutputStream;
+import com.nattguld.util.files.MimeType;
 
 /**
  * 
@@ -21,17 +23,25 @@ public class StreamBody extends ContentBody<File> {
 	 * The file.
 	 */
 	private final File file;
+	
+	/**
+	 * Whether it's a raw stream or not.
+	 */
+	private final boolean raw;
 
 	
 	/**
 	 * Creates a new stream body.
 	 * 
 	 * @param file The file.
+	 * 
+	 * @param raw Whether it's a raw stream or not.
 	 */
-	public StreamBody(File file) {
+	public StreamBody(File file, boolean raw) {
 		super(EncType.STREAM);
 		
 		this.file = file;
+		this.raw = raw;
 	}
 	
 	@Override
@@ -53,6 +63,12 @@ public class StreamBody extends ContentBody<File> {
 	@Override
 	protected void setContentLength(int contentLength) {
 		super.setContentLength(contentLength + (int)file.length());
+	}
+	
+	@Override
+	protected void setContentHeaders(Headers headers) {
+		headers.add("Content-Type", raw ? getEncType().getContentTypeHeader() : MimeType.getByFile(file).getName());
+		headers.add("Content-Length", Integer.toString(getContentLength()));
 	}
 
 	@Override

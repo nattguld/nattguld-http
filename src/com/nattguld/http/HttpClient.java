@@ -494,6 +494,7 @@ public class HttpClient implements AutoCloseable {
 		
 		if (request.getRequestType() == RequestType.OPTIONS) { //Sets the request method for options request
 			headers.add("Access-Control-Request-Method", ((OptionsRequest)request).getRequestTypeOption().getName()); //Sets the option request header
+			headers.add("Origin", NetUtil.getBaseUrl(request.getUrl()));
 		}
 		if (Objects.nonNull(request.getHeaders()) && !request.getHeaders().getHeaders().isEmpty()) { //Setting custom headers
 			for (Entry<String, String> header : request.getHeaders().getHeaders().entrySet()) {
