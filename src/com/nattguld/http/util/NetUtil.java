@@ -2,10 +2,12 @@ package com.nattguld.http.util;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -154,6 +156,23 @@ public class NetUtil {
 	public static String getDomain(String url) {
 		String[] args = url.split("/");
 		return url.startsWith("http") ? args[2] : args[0];
+	}
+	
+	/**
+	 * Encodes a url.
+	 * 
+	 * @param url The url.
+	 * 
+	 * @return The encoded url.
+	 */
+	public static String encodeUrl(String url) {
+		try {
+			return URLEncoder.encode(url, "UTF-8");
+			
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			return url;
+		}
 	}
 	
 	/**

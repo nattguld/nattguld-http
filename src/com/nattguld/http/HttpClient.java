@@ -363,8 +363,16 @@ public class HttpClient implements AutoCloseable {
 		if (rr == null) {
 			return dispatchRequest(request);
 		}
-		if (rr.getCode() == 400 && request.getCode() != 400 && !request.getUrl().endsWith("/")) {
-			System.err.println("Bad request, maybe the url needs to end with a slash? (/)");
+		if (rr.getCode() == 400 && request.getCode() != 400) {
+			if (!ssl && request.getUrl().startsWith("https")) {
+				ssl = true;
+				redirects++;
+				request.setAttempts(0);
+				return dispatchRequest(request);
+			}
+			if (!request.getUrl().endsWith("/")) {
+				System.err.println("Bad request, maybe the url needs to end with a slash? (/)");
+			}
 		}
 		if (request.getRequestType() == RequestType.GET && !((GetRequest)request).isNoRef() && !request.isXMLHttpRequest()) {
 			lastGetUrl = request.getUrl();
