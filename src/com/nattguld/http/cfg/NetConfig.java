@@ -48,7 +48,7 @@ public class NetConfig extends Config {
 	/**
 	 * The preferred chunk size for chunked uploads.
 	 */
-	private int chunkSize = 8388608;
+	private int chunkSize = 11534335;
 	
 	/**
 	 * The data counter for 4G connections.
@@ -69,7 +69,7 @@ public class NetConfig extends Config {
 		this.transferProgress = reader.getAsBoolean("transfer_progress", true);
 		this.connectionTimeout = reader.getAsInt("connection_timeout", 90);
 		this.readTimeout = reader.getAsInt("read_timeout", 120);
-		this.chunkSize = reader.getAsInt("chunk_size", 8388608);
+		this.chunkSize = reader.getAsInt("chunk_size", 11534336);
 		this.cellularDataCounter = (DataCounter)reader.getAsObject("data_counter_cellular", DataCounter.class, new DataCounter());
 		this.saveDataMode = reader.getAsBoolean("save_data_mode", saveDataMode);
 	}

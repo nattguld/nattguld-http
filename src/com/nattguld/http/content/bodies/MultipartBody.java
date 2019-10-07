@@ -140,6 +140,7 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 			}
 			String value = kvp.getValue() instanceof String ? kvp.getValueAsString() : String.valueOf(kvp.getValue());
 			value = new String(value.getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8);
+			//value = URLEncoder.encode(value, "UTF-8"); //TODO not gud, some sites dont like this
 			lastEntryWasFile = false;
 			
 			writeStringPart(httpStream, key, value);
@@ -169,7 +170,7 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 	 */
 	protected void writeStringPart(HTTPOutputStream httpStream, String key, String value) throws IOException {
 		httpStream.writeLine("Content-Disposition: form-data; name=\"" + key + "\"");
-		httpStream.writeLine("Content-Type: text/plain; charset=UTF-8");
+		//httpStream.writeLine("Content-Type: text/plain; charset=UTF-8");
 		httpStream.writeLine();
 		httpStream.writeLine(new String(value.getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8));
 		httpStream.flush();

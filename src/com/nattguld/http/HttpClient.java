@@ -13,15 +13,9 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import javax.net.ssl.SSLHandshakeException;
 
@@ -50,6 +44,7 @@ import com.nattguld.http.socket.HttpSocket;
 import com.nattguld.http.stream.CountInputStream;
 import com.nattguld.http.stream.CountOutputStream;
 import com.nattguld.http.util.NetUtil;
+import com.nattguld.util.Misc;
 
 /**
  * 
@@ -58,6 +53,11 @@ import com.nattguld.http.util.NetUtil;
  */
 
 public class HttpClient implements AutoCloseable {
+	
+	/**
+	 * The HTTP socket.
+	 */
+	private final HttpSocket httpSocket;
 	
 	/**
 	 * The data counter.
@@ -157,6 +157,7 @@ public class HttpClient implements AutoCloseable {
 	 * @param policies The connection policies.
 	 */
 	public HttpClient(Browser browser, HttpProxy proxy, ConnectionPolicy... policies) {
+		this.httpSocket = new HttpSocket();
 		this.dataCounter = new DataCounter();
 		this.proxy = proxy;
 		this.browser = browser;
@@ -191,62 +192,6 @@ public class HttpClient implements AutoCloseable {
 			ProxyUsageMonitor.setInUse((RotatingProxy)proxy, user, false);
 		}
 	}
-	
-	/**
-	 * Attempts to dispatch a request.
-	 * 
-	 * @param mainRequest The main request.
-	 * 
-	 * @param backgroundRequests The background requests.
-	 * 
-	 * @return The request response.
-	 */
-	public RequestResponse dispatchRequest(Request mainRequest, Request... backgroundRequests) {
-		ExecutorService requestExecutor = Executors.newFixedThreadPool(1 + backgroundRequests.length);
-		LinkedList<Callable<RequestResponse>> requestCallables = new LinkedList<>();
-		
-		requestCallables.add(new Callable<RequestResponse>() {
-			@Override
-			public RequestResponse call() throws Exception {
-				return dispatchRequest(mainRequest);
-			}
-		});
-		for (Request bg : backgroundRequests) {
-			requestCallables.add(new Callable<RequestResponse>() {
-				@Override
-				public RequestResponse call() throws Exception {
-					if (bg.getRequestType() == RequestType.GET) {
-						((GetRequest)bg).setNoRef(true);
-					}
-					return dispatchRequest(bg);
-				}
-			});
-		}
-		try {
-			List<Future<RequestResponse>> requestResponses = requestExecutor.invokeAll(requestCallables);
-			
-			if (NetConfig.getConfig().isDebug()) {
-				for (Future<RequestResponse> frr : requestResponses) {
-					if (NetConfig.getConfig().isDebug()) {
-						System.out.println("Background Request [" + frr.get().getEndpoint() + "]: " + frr.get().getCode());
-					}
-				}
-			}
-			return requestResponses.get(0).get();
-			
-		} catch (InterruptedException ex) {
-			ex.printStackTrace();
-			return new RequestResponse(mainRequest.getUrl(), new ResponseStatus(0, "Request execution got interrupted")
-					, new StringResponseBody(ex.getMessage()), null);
-			
-		} catch (ExecutionException ex) {
-			ex.printStackTrace();
-			return new RequestResponse(mainRequest.getUrl(), new ResponseStatus(0, "Failed to execute request")
-					, new StringResponseBody(ex.getMessage()), null);
-		} finally {
-			requestExecutor.shutdown();
-		}
-	}
 
 	/**
 	 * Attempts to dispatch a request.
@@ -255,12 +200,25 @@ public class HttpClient implements AutoCloseable {
 	 * 
 	 * @return The request response.
 	 */
-	private RequestResponse dispatchRequest(Request request) {
+	public RequestResponse dispatchRequest(Request request) {
+		return dispatchRequest(request, "Initial");
+	}
+	
+	/**
+	 * Attempts to dispatch a request.
+	 * 
+	 * @param request The request.
+	 * 
+	 * @param lastError The last error.
+	 * 
+	 * @return The request response.
+	 */
+	public RequestResponse dispatchRequest(Request request, String lastError) {
 		request.setAttempts(request.getAttempts() + 1);
 		
 		if (request.getAttempts() > browser.getConnectionAttempts()) {
-			RequestResponse tooManyAttemptsResponse = new RequestResponse(request.getUrl(), new ResponseStatus(0, "Too many attempts")
-					, new StringResponseBody("Failed to dispatch request (attempts: " + (request.getAttempts()  - 1) + ")"), null);
+			RequestResponse tooManyAttemptsResponse = new RequestResponse(request.getUrl(), new ResponseStatus(HTTPCode.UNKNOWN, "Too many failed attempts (" + lastError + ")")
+					, new StringResponseBody("Failed to dispatch request (" + lastError + ") (attempts: " + (request.getAttempts()  - 1) + ")"), null);
 			request.setAttempts(0);
 			return tooManyAttemptsResponse;
 		}
@@ -269,12 +227,12 @@ public class HttpClient implements AutoCloseable {
 		RequestResponse rr = null;
 		
 		String host = NetUtil.getDomain(request.getUrl());
-		String endpoint = request.isExactEndpoint() ? request.getUrl() : request.getUrl().substring(request.getUrl().indexOf(host) + host.length(), request.getUrl().length());
+		String endpoint = request.getUrl().substring(request.getUrl().indexOf(host) + host.length(), request.getUrl().length());
 
 		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Host: " + host + ", Endpoint: " + endpoint);
 		}
-		try (Socket socket = HttpSocket.connect(proxy, host, browser, ssl, request.getPort())) {
+		try (Socket socket = httpSocket.connect(proxy, host, browser, ssl, request.getPort())) {
 			try (BufferedOutputStream out = new BufferedOutputStream(new CountOutputStream(socket.getOutputStream(), request.getDataCounter()))) {
 				PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8").newEncoder()), true) {
 					@Override
@@ -318,12 +276,13 @@ public class HttpClient implements AutoCloseable {
 					responseHeaders = hd.getHeaders();
 					
 					if (rs == null) {
-						System.err.println("Failed to decode request headers for " + request.getUrl());
+						System.err.println("Failed to decode headers [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
 						return dispatchRequest(request);
 					}
 					cookieJar.importCookies(hd.getCookies());
 					
-					IResponseBody<?> responseBody = rs.getCode() != 204 ? ResponseBodyParser.parseResponseBody(request, responseHeaders, in) : new StringResponseBody("");
+					IResponseBody<?> responseBody = rs.getHttpCode() != HTTPCode.NO_CONTENT 
+							? ResponseBodyParser.parseResponseBody(request, responseHeaders, in) : new StringResponseBody("");
 					rr = new RequestResponse(request.getUrl(), rs, responseBody, responseHeaders);
 				}
 				writer.close();
@@ -340,90 +299,101 @@ public class HttpClient implements AutoCloseable {
 				dataCounter.addDown(request.getDataCounter().getDown());
 			}
 		} catch (UnknownHostException ex) {
-			System.err.println("Unknown host " + host);
+			return handleRequestException("Unknown host", ex, host, request);
 			
 		} catch (ConnectException ex) {
-			System.err.println("Failed to establish connection. Connection refused.");
+			return handleRequestException("Connection refused", ex, host, request);
 			
 		} catch (SocketException ex) {
-			ex.printStackTrace();
+			return handleRequestException("Socket exception", ex, host, request);
 			
 		} catch (SocketTimeoutException ex) {
-			System.err.println("Failed to establish connection. Timed out.");
+			return handleRequestException("Timed out", ex, host, request);
 			
 		} catch (SSLHandshakeException ex) {
-			ex.printStackTrace();
+			return handleRequestException("SSL handshake exception", ex, host, request);
 			
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			return handleRequestException("IO exception", ex, host, request);
 			
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			return handleRequestException("Exception", ex, host, request);
 		}
-		if (rr == null) {
-			return dispatchRequest(request);
-		}
-		if (rr.getCode() == 400 && request.getCode() != 400) {
-			if (!ssl && request.getUrl().startsWith("https")) {
-				ssl = true;
-				redirects++;
-				request.setAttempts(0);
-				return dispatchRequest(request);
-			}
-			if (!request.getUrl().endsWith("/")) {
-				System.err.println("Bad request, maybe the url needs to end with a slash? (/)");
-			}
-		}
-		if (request.getRequestType() == RequestType.GET && !((GetRequest)request).isNoRef() && !request.isXMLHttpRequest()) {
-			lastGetUrl = request.getUrl();
-		}
-		if (!hasPolicy(ConnectionPolicy.NO_AUTO_REDIRECT) && 
-				(rr.getCode() == 301 || rr.getCode() == 302 || rr.getCode() == 303
-				|| rr.getCode() == 307 || rr.getCode() == 308)) {
-				
-			if (redirects >= 10) {
-				redirects = 0;
-				request.setAttempts(0);
-				return new RequestResponse(request.getUrl(), new ResponseStatus(0, "Too many redirects")
-						, new StringResponseBody("Too many redirects through " + request.getUrl()), null);
-			}
-			String redirectUrl = rr.getLocation();
-				
-			if (Objects.nonNull(redirectUrl)) {
-				if (!redirectUrl.startsWith("http")) {
-					if (Objects.isNull(lastGetUrl)) {
+		if (rr.getCode() != request.getCode()) {
+			if (rr.getResponseStatus().getHttpCode().isRedirection()) {
+				if (!hasPolicy(ConnectionPolicy.NO_AUTO_REDIRECT)) {
+					if (redirects >= 6) {
 						redirects = 0;
 						request.setAttempts(0);
-						return new RequestResponse(redirectUrl, new ResponseStatus(0, "Failed to redirect")
-								, new StringResponseBody("Failed to auto redirect for " + request.getUrl()), null);
+						return new RequestResponse(request.getUrl(), new ResponseStatus(HTTPCode.UNKNOWN, "Too many redirects")
+								, new StringResponseBody("Too many redirects through " + request.getUrl()), null);
 					}
-					redirectUrl = NetUtil.getBaseUrl(request.getUrl()) + redirectUrl;
+					String redirectUrl = rr.getLocation();
+						
+					if (Objects.nonNull(redirectUrl)) {
+						if (!redirectUrl.startsWith("http")) {
+							if (Objects.isNull(lastGetUrl)) {
+								redirects = 0;
+								request.setAttempts(0);
+								return new RequestResponse(redirectUrl, new ResponseStatus(HTTPCode.UNKNOWN, "Failed to redirect")
+										, new StringResponseBody("Failed to auto redirect for " + request.getUrl()), null);
+							}
+							redirectUrl = NetUtil.getBaseUrl(request.getUrl()) + redirectUrl;
+						}
+						if (NetConfig.getConfig().isDebug()) {
+							System.out.println("Redirect (" + rr.getCode() + ") => " + redirectUrl + " [Last GET: " + lastGetUrl + "][Location: " + rr.getLocation() + "]");	
+						}
+						if (rr.getCode() == 301 && redirectUrl.equals(request.getUrl())) {
+							ssl = true;
+							redirects++;
+							request.setAttempts(0);
+							return dispatchRequest(request);
+						}
+						redirects++;
+						request.setAttempts(0);
+						Request redirReq = new GetRequest(redirectUrl, 200, request.getHeaders());
+						redirReq.setSavePath(request.getSavePath());
+						redirReq.setProgressListener(request.getProgressListener());
+						return dispatchRequest(redirReq);
+					}
+					System.err.println("No redirect URL found on redirect response [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
 				}
-				if (NetConfig.getConfig().isDebug()) {
-					System.out.println("Redirect (" + rr.getCode() + ") => " + redirectUrl + " [Last GET: " + lastGetUrl + "][Location: " + rr.getLocation() + "]");	
+			} else if (rr.getResponseStatus().getHttpCode().isClientError()) {
+				if (rr.getResponseStatus().getHttpCode() == HTTPCode.BAD_REQUEST) {
+					if (!ssl && request.getUrl().startsWith("https")) {
+						ssl = true;
+						redirects++;
+						request.setAttempts(0);
+						return dispatchRequest(request);
+					}
 				}
-				if (redirectUrl.equals(request.getUrl())) {
-					ssl = true;
-					redirects++;
-					request.setAttempts(0);
+				if (rr.getResponseStatus().getHttpCode() == HTTPCode.TOO_MANY_REQUESTS) {
+					System.err.println("Too many requests, waiting for 30 seconds to try again");
+					Misc.sleep(30000);
 					return dispatchRequest(request);
 				}
-				redirects++;
-				request.setAttempts(0);
-				Request redirReq = new GetRequest(redirectUrl, 200, request.getHeaders());
-				redirReq.setSavePath(request.getSavePath());
-				redirReq.setProgressListener(request.getProgressListener());
-				return dispatchRequest(redirReq);
+				System.err.println("Client error " + rr.getResponseStatus().getHttpCode().toString());
+				
+			} else if (rr.getResponseStatus().getHttpCode().isServerError()) {
+				System.err.println("Server error " + rr.getResponseStatus().getHttpCode().toString());
+				
+			} else if (!rr.getResponseStatus().getHttpCode().isSuccess()) {
+				System.err.println("Unsuccessful request " + rr.getResponseStatus().getHttpCode().toString());
 			}
-			System.err.println("No redirect url found on a redirect response (" + request.getUrl() + " => " + rr.getCode() + ")");
 		}
 		redirects = 0;
 
+		if (request.getRequestType() == RequestType.GET && !((GetRequest)request).isNoRef() && !request.isXMLHttpRequest()) {
+			lastGetUrl = request.getUrl();
+		}
 		if (request instanceof ContentRequest) {
 			ContentRequest contReq = ((ContentRequest)request);
 			
 			if (contReq.hasBody() && contReq.getBody().isChunked()) {
 				if (!contReq.getBody().getChunkHandler().isFinished()) {
+					if (Objects.nonNull(contReq.getProgressListener())) {
+						contReq.getProgressListener().setProgress(contReq.getBody().getChunkHandler().getProgress());
+					}
 					request.setAttempts(0);
 					return dispatchRequest(request);
 				}
@@ -436,6 +406,27 @@ public class HttpClient implements AutoCloseable {
 		}
 		request.setAttempts(0);
 		return rr;
+	}
+	
+	/**
+	 * Handles a request exception.
+	 * 
+	 * @param message The exception error message.
+	 * 
+	 * @param ex The exception.
+	 * 
+	 * @param host The host.
+	 * 
+	 * @param request The request.
+	 * 
+	 * @return The new request response.
+	 */
+	private RequestResponse handleRequestException(String message, Exception ex, String host, Request request) {
+		if (NetConfig.getConfig().isDebug()) {
+			ex.printStackTrace();
+		}
+		System.err.println(message + " (" + host + ") [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
+		return dispatchRequest(request, message + " (" + host + ") [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
 	}
 	
 	/**

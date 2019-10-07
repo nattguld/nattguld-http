@@ -60,7 +60,8 @@ public class ResponseBodyParser {
 			bodySize = Maths.parseInt(contentLength, 0);
 		}
 		if (!chunked && Objects.isNull(contentLength)) {
-			throw new NetException("Response for " + request.getUrl() + " is not chunked but has no Content-Length header");
+			//TODO Temporary removed to not block throw new NetException("Response for " + request.getUrl() + " is not chunked but has no Content-Length header.");
+			System.err.println("Response for " + request.getUrl() + " is not chunked but has no Content-Length header.");
 		}
 		boolean download = Objects.nonNull(request.getSavePath()) && Objects.nonNull(contentType);
 		

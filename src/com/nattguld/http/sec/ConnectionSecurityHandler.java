@@ -39,27 +39,27 @@ public class ConnectionSecurityHandler {
 	 * 
 	 * @return The result.
 	 */
-	public boolean bypass(HttpClient c, Request request, RequestResponse r) {
+	public boolean bypass(HttpClient c, Request r, RequestResponse rr) {
 		if (!hasImplementations()) {
 			System.err.println("No connection security implementations found");
 			return true;
 		}
 		for (ConnectionSecurity conSec : conSecImplementations) {
 			try {
-				if (!conSec.encountered(c, request, r)) {
+				if (!conSec.encountered(c, r, rr)) {
 					continue;
 				}
-				System.out.println("Connection security encountered");
+				System.out.println("[" + conSec.getName() + "][" + r.getUrl() + "]: Connection security encountered");
 				
-				if (!conSec.bypass(c, request, r)) {
-					System.err.println("Failed to by pass connection security");
+				if (!conSec.bypass(c, r, rr)) {
+					System.err.println("[" + conSec.getName() + "][" + r.getUrl() + "]: Failed to by pass connection security");
 					return false;
 				}
-				if (conSec.encountered(c, request, r)) {
-					System.err.println("Connection security still encountered after bypassing");
+				if (conSec.encountered(c, r, rr)) {
+					System.err.println("[" + conSec.getName() + "][" + r.getUrl() + "]: Connection security still encountered after bypassing");
 					return false;
 				}
-				System.out.println("Bypassed connection security");
+				System.out.println("[" + conSec.getName() + "][" + r.getUrl() + "]: Bypassed connection security");
 				
 			} catch (Exception ex) {
 				ex.printStackTrace();

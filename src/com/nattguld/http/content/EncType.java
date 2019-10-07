@@ -10,10 +10,11 @@ public enum EncType {
 	
 	JSON("Json", "application/json", "application/json, text/javascript, */*; q=0.01"),
 	XML("XML", "text/xml;charset=utf-8", "text/xml, application/xml, text/javascript, */*; q=0.01"),
-	URL_ENCODED("URL encoded", "application/x-www-form-urlencoded; charset=UTF-8", "text/html,application/xhtml+xml,application/xml;q=0.9, image/webp,image/apng,*/*;q=0.8"),
+	URL_ENCODED("URL encoded", "application/x-www-form-urlencoded; charset=UTF-8", "text/html,application/xhtml+xml,application/xml;q=0.9, image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"),
 	MULTIPART("Multipart", "multipart/form-data", "text/html,application/xhtml+xml,application/xml;q=0.9, image/webp,image/apng,*/*;q=0.8"),
 	STREAM("Octet-Stream", "application/octet-stream", "*/*"),
 	ALL("All", "*/*", "*/*"),
+	TEXT_HTML("text/html", "text/html, */*; q=0.01", "text/html, */*; q=0.01"),
 	PLAIN_TEXT("text/plain", "text/plain", "text/plain");
 	
 	

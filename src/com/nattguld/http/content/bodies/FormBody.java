@@ -1,7 +1,6 @@
 package com.nattguld.http.content.bodies;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
@@ -19,7 +18,7 @@ import com.nattguld.util.generics.kvps.impl.AttributeKeyValuePair;
  *
  */
 
-public class FormBody extends ContentBody<List<AttributeKeyValuePair>> { //TODO FormBody
+public class FormBody extends ContentBody<List<AttributeKeyValuePair>> {
 	
 	/**
 	 * The key-value pairs.
@@ -83,12 +82,12 @@ public class FormBody extends ContentBody<List<AttributeKeyValuePair>> { //TODO 
 		int index = 0;
 		
 		for (AttributeKeyValuePair kvp : kvps) {
-			String key = URLEncoder.encode(kvp.getKey(), "UTF-8");
+			//String key = URLEncoder.encode(kvp.getKey(), "UTF-8");
 			String value = new String(kvp.getValueAsString().getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8);
-			//String value = URLEncoder.encode(entry.getValue(), "UTF-8");
+			//value = URLEncoder.encode(value, "UTF-8"); //TODO not gud, some sites dont like this
 			
-			if (!key.isEmpty()) {
-				httpStream.writeString(key + "=" + value);
+			if (!kvp.getKey().isEmpty()) {
+				httpStream.writeString(kvp.getKey() + "=" + value);
 			}
 			if (++index < kvps.size()) {
 				httpStream.writeString("&");

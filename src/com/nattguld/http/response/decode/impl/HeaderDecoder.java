@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.nattguld.http.HTTPCode;
 import com.nattguld.http.cfg.HttpVersion;
 import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.content.cookies.Cookie;
@@ -24,7 +25,7 @@ public class HeaderDecoder implements IResponseDecoder {
 	/**
 	 * The status response.
 	 */
-	private ResponseStatus rs = new ResponseStatus(HttpVersion.HTTP_1_1, 0, "Header not found in decoding process");
+	private ResponseStatus rs = new ResponseStatus(HttpVersion.HTTP_1_1, HTTPCode.INVALID, "Header not found in decoding process");
 	
 	/**
 	 * The response headers.
@@ -73,7 +74,17 @@ public class HeaderDecoder implements IResponseDecoder {
 				for (int i = 2; i < msgParts.length; i ++) {
 					responseMsgBuilder.append(msgParts[i] + " ");
 				}
-				rs = new ResponseStatus(HttpVersion.parse(httpProtocolVersion), Integer.parseInt(responseCode), responseMsgBuilder.toString().trim());
+				int code = Integer.parseInt(responseCode);
+				HTTPCode httpCode = HTTPCode.getForCode(code);
+				String msg = responseMsgBuilder.toString().trim();
+				
+				if (msg.isEmpty()) {
+					msg = httpCode.getMessage();
+				}
+				if (httpCode == HTTPCode.INVALID) {
+					msg = "[Unhandled code: " + code + "] - " + msg;
+				}
+				rs = new ResponseStatus(HttpVersion.parse(httpProtocolVersion), httpCode, msg);
 				continue;
 			}
 			if (s.equals("\r\n")) {

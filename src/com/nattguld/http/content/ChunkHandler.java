@@ -48,6 +48,11 @@ public class ChunkHandler implements AutoCloseable {
 	private int chunkSize;
 	
 	/**
+	 * The rest chunk size.
+	 */
+	private long restChunkSize;
+	
+	/**
 	 * The start range.
 	 */
 	private int startRange;
@@ -73,14 +78,14 @@ public class ChunkHandler implements AutoCloseable {
 	public ChunkHandler(File file) throws FileNotFoundException {
 		this.file = file;
 		this.fileSize = file.length();
-		this.chunks = fileSize < NetConfig.getConfig().getChunkSize() ? 1 
+		this.chunks = fileSize <= NetConfig.getConfig().getChunkSize() ? 1 
 				: (fileSize / NetConfig.getConfig().getChunkSize()); 
 		this.bis = new BufferedInputStream(new FileInputStream(file));
 		
 		if (chunks > 1) {
-			long chunkRest = fileSize % chunks;
+			restChunkSize = fileSize % (chunks * NetConfig.getConfig().getChunkSize());
 			
-			if (chunkRest > 0) {
+			if (restChunkSize > 0) {
 				chunks++;
 			}
 		}
@@ -92,17 +97,11 @@ public class ChunkHandler implements AutoCloseable {
 	public void prepare() {
 		chunkSize = NetConfig.getConfig().getChunkSize();
 		startRange = chunkId * chunkSize;
-		endRange = (chunkId + 1) * chunkSize;
+		endRange = ((chunkId + 1) * chunkSize) - 1;
 		
 		if ((chunkId + 1) == chunks) {
-			endRange = file.length();
-			chunkSize = (int)(file.length() - startRange);
-		}
-		if (startRange != 0) {
-			startRange++;
-		}
-		if (endRange == file.length()) {
-			endRange--;
+			endRange = file.length() - 1;
+			chunkSize = (int)restChunkSize;
 		}
 	}
 	

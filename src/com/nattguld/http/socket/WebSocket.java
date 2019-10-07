@@ -35,7 +35,7 @@ public class WebSocket {
 		OutputStream out = tunnel.getOutputStream();
 		PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), true);
 	        
-		writer.println("GET /chat HTTP/1.1");
+		writer.println("GET ws://recommend.chaturbate.com:8443/ws HTTP/1.1");
 		writer.println("Host: server.example.com");
 		writer.println("Upgrade: websocket");
 		writer.println("Connection: Upgrade");
@@ -57,9 +57,9 @@ public class WebSocket {
 	        HeaderDecoder hd = new HeaderDecoder();
 	        hd.decode(in);
 	        
-	        if (hd.getResponseStatus().getCode() != 200) {
+	      /*  if (hd.getResponseStatus().getCode() != 200) {
 	        	throw new IOException("Unable to tunnel through proxy (" + hd.getResponseStatus() + ")");
-	        }
+	        }*/
 	        /*
 	       //RESPONSE
 	        HTTP/1.1 101 Switching Protocols

@@ -75,12 +75,6 @@ public abstract class Request {
 	private boolean decodeBody;
 	
 	/**
-	 * Whether to use the exact endpoint or not.
-	 */
-	@Deprecated
-	private boolean exactEndpoint;
-	
-	/**
 	 * The port.
 	 */
 	private int port = 80;
@@ -190,29 +184,6 @@ public abstract class Request {
 	 */
 	public boolean isXMLHttpRequest() {
 		return xmlHttpRequest;
-	}
-	
-	/**
-	 * Modifies whether to keep the exact endpoint or not.
-	 * 
-	 * @param exactEndpoint The new state.
-	 * 
-	 * @return The request.
-	 */
-	@Deprecated
-	public Request setExactEndpoint(boolean exactEndpoint) {
-		this.exactEndpoint = exactEndpoint;
-		return this;
-	}
-	
-	/**
-	 * Retrieves whether to keep the exact endpoint or not.
-	 * 
-	 * @return The result.
-	 */
-	@Deprecated
-	public boolean isExactEndpoint() {
-		return exactEndpoint;
 	}
 	
 	/**

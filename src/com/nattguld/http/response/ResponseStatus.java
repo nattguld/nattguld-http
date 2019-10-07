@@ -1,5 +1,6 @@
 package com.nattguld.http.response;
 
+import com.nattguld.http.HTTPCode;
 import com.nattguld.http.cfg.HttpVersion;
 
 /**
@@ -16,9 +17,9 @@ public class ResponseStatus {
 	private final HttpVersion httpVersion;
 	
 	/**
-	 * The response code.
+	 * The HTTP code.
 	 */
-	private final int code;
+	private final HTTPCode httpCode;
 	
 	/**
 	 * The response message.
@@ -29,12 +30,12 @@ public class ResponseStatus {
 	/**
 	 * Creates a new response status.
 	 * 
-	 * @param code The response code.
+	 * @param httpCode The HTTP code.
 	 * 
 	 * @param message The response message.
 	 */
-	public ResponseStatus(int code, String message) {
-		this(HttpVersion.HTTP_1_1, code, message);
+	public ResponseStatus(HTTPCode httpCode, String message) {
+		this(HttpVersion.HTTP_1_1, httpCode, message);
 	}
 	
 	/**
@@ -42,13 +43,13 @@ public class ResponseStatus {
 	 * 
 	 * @param httpVersion The HTTP version.
 	 * 
-	 * @param code The response code.
+	 * @param httpCode The HTTP code code.
 	 * 
 	 * @param message The response message.
 	 */
-	public ResponseStatus(HttpVersion httpVersion, int code, String message) {
+	public ResponseStatus(HttpVersion httpVersion, HTTPCode httpCode, String message) {
 		this.httpVersion = httpVersion;
-		this.code = code;
+		this.httpCode = httpCode;
 		this.message = message;
 	}
 	
@@ -62,12 +63,12 @@ public class ResponseStatus {
 	}
 	
 	/**
-	 * Retrieves the response code.
+	 * Retrieves the HTTP code.
 	 * 
-	 * @return The response code.
+	 * @return The HTTP code.
 	 */
-	public int getCode() {
-		return code;
+	public HTTPCode getHttpCode() {
+		return httpCode;
 	}
 	
 	/**
@@ -81,7 +82,7 @@ public class ResponseStatus {
 	
 	@Override
 	public String toString() {
-		return getHttpVersion().getName() + " " + getCode() + " " + getMessage();
+		return getHttpVersion().getName() + " " + getHttpCode().toString() + " " + getMessage();
 	}
 
 }

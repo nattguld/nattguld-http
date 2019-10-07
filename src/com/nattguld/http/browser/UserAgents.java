@@ -72,6 +72,21 @@ public class UserAgents {
 	};
 	
 	/**
+	 * Holds phone screen resolutions.
+	 */
+	private static final int[][] PHONE_SCREEN_RESOLUTIONS = new int[][] {
+		{480, 854},
+		{828, 1792},
+		{1125, 2436},
+		{1080, 1920},
+		{750, 1334},
+		{750, 1334},
+		{1440, 2560},
+		{1080, 2160},	
+		{1440, 2960},	
+	};
+	
+	/**
 	 * The possible android versions.
 	 */
 	private static final Object[][] ANDROID_VERSIONS = {
@@ -146,6 +161,19 @@ public class UserAgents {
 		}
 		String modelName = brand.getRandomModel(osVersion);
 		return "Mozilla/5.0 (Linux; Android " + osVersion + "; " + modelName + " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/" + browserVersion + " Mobile Safari/537.36";
+	}
+	
+	/**
+	 * Retrieves the app user agent.
+	 * 
+	 * @return The app user agent.
+	 */
+	public static String getAppUserAgent() {
+		PhoneBrand brand = getRandomPhoneBrand(false);
+		String osVersion = getRandomAndroidVersion();
+		String modelName = brand.getRandomModel(osVersion);
+		
+		return "Linux; U; Android " + osVersion + "; " + modelName;
 	}
 	
     /**
@@ -259,6 +287,15 @@ public class UserAgents {
 			marker += share;
 		}
 		return "12.2"; //Most recent/common
+	}
+	
+	/**
+	 * Retrieves a random phone screen resoltution.
+	 * 
+	 * @return The resolution.
+	 */
+	public static int[] getRandomPhoneScreenResolution() {
+		return PHONE_SCREEN_RESOLUTIONS[Maths.random(PHONE_SCREEN_RESOLUTIONS.length)];
 	}
 
 }

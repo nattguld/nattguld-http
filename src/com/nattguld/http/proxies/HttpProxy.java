@@ -3,6 +3,8 @@ package com.nattguld.http.proxies;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
+import com.nattguld.util.hashing.Hasher;
+
 /**
  * 
  * @author randqm
@@ -35,6 +37,11 @@ public class HttpProxy {
 	 * The authentication password.
 	 */
 	private final String password;
+	
+	/**
+	 * The base 64 auth.
+	 */
+	private String base64Auth;
 
 	
 	/**
@@ -164,6 +171,21 @@ public class HttpProxy {
 	 */
 	public boolean hasAuthentication() {
 		return Objects.nonNull(getUsername()) && Objects.nonNull(getPassword());
+	}
+	
+	/**
+	 * Retrieves the base64 authentication.
+	 * 
+	 * @return The base64 authentication.
+	 */
+	public String getBase64Auth() {
+		if (Objects.isNull(base64Auth)) {
+			if (!hasAuthentication()) {
+				return null;
+			}
+			this.base64Auth = Hasher.base64(username + ":" + password);
+		}
+		return base64Auth;
 	}
 	
 	/**
