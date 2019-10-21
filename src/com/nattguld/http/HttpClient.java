@@ -95,9 +95,9 @@ public class HttpClient implements AutoCloseable {
 	private boolean ssl;
 	
 	/**
-	 * The last GET url.
+	 * The last refered url.
 	 */
-	private String lastGetUrl;
+	private String lastReferer;
 	
 	/**
 	 * The amount of redirects on 1 request.
@@ -264,18 +264,15 @@ public class HttpClient implements AutoCloseable {
 					}
 				}
 				out.flush();
-				
-				ResponseStatus rs = null;
-				Headers responseHeaders = new Headers();
-			
+
 				try (InputStream in = new CountInputStream(socket.getInputStream(), request.getDataCounter())) {
 					HeaderDecoder hd = new HeaderDecoder();
 					hd.decode(in);
 
-					rs = hd.getResponseStatus();
-					responseHeaders = hd.getHeaders();
+					ResponseStatus rs = hd.getResponseStatus();
+					Headers responseHeaders = hd.getHeaders();
 					
-					if (rs == null) {
+					if (Objects.isNull(rs)) {
 						System.err.println("Failed to decode headers [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
 						return dispatchRequest(request);
 					}
@@ -332,7 +329,7 @@ public class HttpClient implements AutoCloseable {
 						
 					if (Objects.nonNull(redirectUrl)) {
 						if (!redirectUrl.startsWith("http")) {
-							if (Objects.isNull(lastGetUrl)) {
+							if (Objects.isNull(lastReferer)) {
 								redirects = 0;
 								request.setAttempts(0);
 								return new RequestResponse(redirectUrl, new ResponseStatus(HTTPCode.UNKNOWN, "Failed to redirect")
@@ -341,7 +338,7 @@ public class HttpClient implements AutoCloseable {
 							redirectUrl = NetUtil.getBaseUrl(request.getUrl()) + redirectUrl;
 						}
 						if (NetConfig.getConfig().isDebug()) {
-							System.out.println("Redirect (" + rr.getCode() + ") => " + redirectUrl + " [Last GET: " + lastGetUrl + "][Location: " + rr.getLocation() + "]");	
+							System.out.println("Redirect (" + rr.getCode() + ") => " + redirectUrl + " [Last GET: " + lastReferer + "][Location: " + rr.getLocation() + "]");	
 						}
 						if (rr.getCode() == 301 && redirectUrl.equals(request.getUrl())) {
 							ssl = true;
@@ -351,7 +348,8 @@ public class HttpClient implements AutoCloseable {
 						}
 						redirects++;
 						request.setAttempts(0);
-						Request redirReq = new GetRequest(redirectUrl, 200, request.getHeaders());
+						Request redirReq = new GetRequest(redirectUrl, 200, request.getHeaders()).setPort(request.getPort())
+								.setDecodeBody(request.isDecodeBody());
 						redirReq.setSavePath(request.getSavePath());
 						redirReq.setProgressListener(request.getProgressListener());
 						return dispatchRequest(redirReq);
@@ -384,7 +382,7 @@ public class HttpClient implements AutoCloseable {
 		redirects = 0;
 
 		if (request.getRequestType() == RequestType.GET && !((GetRequest)request).isNoRef() && !request.isXMLHttpRequest()) {
-			lastGetUrl = request.getUrl();
+			lastReferer = request.getUrl();
 		}
 		if (request instanceof ContentRequest) {
 			ContentRequest contReq = ((ContentRequest)request);
@@ -485,8 +483,8 @@ public class HttpClient implements AutoCloseable {
 		if (getBrowser().isDoNotTrack()) {
 			headers.add("DNT", "1");
 		}
-        if (Objects.nonNull(lastGetUrl)) {
-        	headers.add("Referer", lastGetUrl);
+        if (Objects.nonNull(lastReferer)) {
+        	headers.add("Referer", lastReferer);
         }
         headers.add("Accept-Encoding", "gzip, deflate, br");
 		headers.add("Accept-Language", browser.getLanguage());
@@ -580,12 +578,24 @@ public class HttpClient implements AutoCloseable {
 	}
 	
 	/**
-	 * Retrieves the last url accessed through a GET request.
+	 * Modifies the last referer url.
+	 * 
+	 * @param lastReferer The new last referer url.
+	 * 
+	 * @return The client.
+	 */
+	public HttpClient setLastReferer(String lastReferer) {
+		this.lastReferer = lastReferer;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the last refered url.
 	 * 
 	 * @return The url.
 	 */
-	public String getLastGetUrl() {
-		return lastGetUrl;
+	public String getLastReferer() {
+		return lastReferer;
 	}
 
 	/**

@@ -71,7 +71,7 @@ public class NetConfig extends Config {
 		this.readTimeout = reader.getAsInt("read_timeout", 120);
 		this.chunkSize = reader.getAsInt("chunk_size", 11534336);
 		this.cellularDataCounter = (DataCounter)reader.getAsObject("data_counter_cellular", DataCounter.class, new DataCounter());
-		this.saveDataMode = reader.getAsBoolean("save_data_mode", saveDataMode);
+		this.saveDataMode = reader.getAsBoolean("save_data_mode", false);
 	}
 
 	@Override

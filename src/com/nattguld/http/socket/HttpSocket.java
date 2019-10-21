@@ -202,10 +202,10 @@ public class HttpSocket {
     	Headers headers = new Headers();
     	headers.add("Host", host + ":" + port);
     	headers.add("User-Agent", browser.getUserAgent());
-    	headers.add("Connection", "keep-alive");
+    	headers.add("Connection", "close"); //keep-alive
     	
     	if (Objects.nonNull(proxy) && proxy.hasAuthentication()) {
-        	headers.add("Proxy-Connection", "keep-alive");
+        	//headers.add("Proxy-Connection", "keep-alive");
         	headers.add("Proxy-Authorization", "Basic " + proxy.getBase64Auth());
         }
     	StringBuilder raw = new StringBuilder();
@@ -240,6 +240,8 @@ public class HttpSocket {
         hd.decode(in);
         
         if (hd.getResponseStatus().getHttpCode() != HTTPCode.OK) {
+        	writer.close();
+        	out.close();
         	in.close();
         	throw new IOException("Unable to tunnel through proxy (" + hd.getResponseStatus() + ")");
         }

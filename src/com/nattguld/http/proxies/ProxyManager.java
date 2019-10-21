@@ -158,7 +158,7 @@ public class ProxyManager {
 	    			continue;
 	    		}
 	    		return p;*/
-				return null;
+				return INVALID_PROXY;
 	    	}
 	    	if (choice == ProxyChoice.DIRECT) {
 	    		return null;

@@ -45,8 +45,8 @@ public class WebSocket {
 		writer.println("Sec-WebSocket-Version: 13");
 	        
 	        if (Objects.nonNull(proxy) && proxy.hasAuthentication()) {
-	        	String encoded = new sun.misc.BASE64Encoder().encodeBuffer((proxy.getUsername() + ":" + proxy.getPassword()).getBytes()).replace("\r\n", "");
-	        	writer.println("Proxy-Authorization: Basic " + encoded);
+	        	//String encoded = new sun.misc.BASE64Encoder().encodeBuffer((proxy.getUsername() + ":" + proxy.getPassword()).getBytes()).replace("\r\n", "");
+	        	//writer.println("Proxy-Authorization: Basic " + encoded);
 	        }
 	        writer.println();
 	        writer.flush();
