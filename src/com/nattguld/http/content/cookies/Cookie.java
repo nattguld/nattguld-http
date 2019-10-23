@@ -38,6 +38,11 @@ public class Cookie {
 	 */
 	private final boolean secure;
 	
+	/**
+	 * The max age of the cookie.
+	 */
+	private final long maxAge;
+	
 	
 	/**
 	 * Creates a new cookie.
@@ -100,12 +105,34 @@ public class Cookie {
 	 * @param secure The security.
 	 */
 	public Cookie(String name, String value, String expires, String path, String domain, boolean secure) {
+		this(name, value, expires, path, domain, secure, 0L);
+	}
+	
+	/**
+	 * Creates a new cookie.
+	 * 
+	 * @param name The name.
+	 * 
+	 * @param value The value.
+	 * 
+	 * @param expires The expiration.
+	 * 
+	 * @param path The path.
+	 * 
+	 * @param domain The domain.
+	 * 
+	 * @param secure The security.
+	 * 
+	 * @param maxAge The max age of the cookie.
+	 */
+	public Cookie(String name, String value, String expires, String path, String domain, boolean secure, long maxAge) {
 		this.name = name;
 		this.value = value;
 		this.expires = expires;
 		this.path = path;
 		this.domain = domain;
 		this.secure = secure;
+		this.maxAge = maxAge;
 	}
 
 	/**
@@ -160,6 +187,15 @@ public class Cookie {
 	 */
 	public boolean isSecure() {
 		return secure;
+	}
+	
+	/**
+	 * Retrieves the max age of the cookie.
+	 * 
+	 * @return The max age.
+	 */
+	public long getMaxAge() {
+		return maxAge;
 	}
 	
 	@Override

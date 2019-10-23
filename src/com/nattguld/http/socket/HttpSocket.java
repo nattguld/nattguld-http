@@ -19,10 +19,13 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import com.nattguld.http.HTTPCode;
+import com.nattguld.http.HttpClient;
 import com.nattguld.http.browser.Browser;
 import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.proxies.HttpProxy;
+import com.nattguld.http.proxies.ProxyManager;
+import com.nattguld.http.requests.impl.GetRequest;
 import com.nattguld.http.response.decode.impl.HeaderDecoder;
 import com.nattguld.http.ssl.SSLManager;
 
@@ -48,7 +51,7 @@ public class HttpSocket {
 	 * Holds the SSL hosts.
 	 */
 	private static List<String> sslHosts = new CopyOnWriteArrayList<>();
-	
+
 	
 	/**
 	 * Adds a given value to a given list's backlog.
@@ -202,7 +205,7 @@ public class HttpSocket {
     	Headers headers = new Headers();
     	headers.add("Host", host + ":" + port);
     	headers.add("User-Agent", browser.getUserAgent());
-    	headers.add("Connection", "close"); //keep-alive
+    	headers.add("Connection", "keep-alive"); //close
     	
     	if (Objects.nonNull(proxy) && proxy.hasAuthentication()) {
         	//headers.add("Proxy-Connection", "keep-alive");
@@ -211,7 +214,7 @@ public class HttpSocket {
     	StringBuilder raw = new StringBuilder();
     	
         OutputStream out = tunnel.getOutputStream();
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8").newEncoder()), true) {
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(tunnel.getOutputStream(), Charset.forName("UTF-8").newEncoder()), true) {
 			@Override
 			public void println(String s) {
 				super.println(s);
@@ -232,6 +235,7 @@ public class HttpSocket {
 		}
         writer.println();
         writer.flush();
+        
         out.flush();
         
         InputStream in = tunnel.getInputStream();
@@ -248,6 +252,13 @@ public class HttpSocket {
         if (NetConfig.getConfig().isDebug()) {
         	System.out.println("Tunneled through proxy for " + host + ":" + 443);
         }
+    }
+    
+    public static void main(String[] args) {
+    	try (HttpClient c = new HttpClient(ProxyManager.parse("127.0.0.1:8888"))) {
+    		System.out.println(c.dispatchRequest(new GetRequest("https://www.pornhub.com")).getCode());
+    		//System.out.println(c.dispatchRequest(new GetRequest("https://www.pornhub.com/")).getCode());
+    	}
     }
 
 }

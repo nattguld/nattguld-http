@@ -13,6 +13,7 @@ import com.nattguld.http.content.cookies.Cookie;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.response.ResponseStatus;
 import com.nattguld.http.response.decode.IResponseDecoder;
+import com.nattguld.util.maths.Maths;
 
 /**
  * 
@@ -121,38 +122,53 @@ public class HeaderDecoder implements IResponseDecoder {
 	private Cookie extractCookie(String headerValue) {
 		String[] fields = headerValue.split(";");
 		
-		String[] nameValuePair = fields[0].split("=");
-		String cookieName = nameValuePair[0];
-		String cookieValue = nameValuePair.length >= 2 ? nameValuePair[1] : "";
+		String key = fields[0].substring(0, fields[0].indexOf("=")).trim();
+		String value = fields[0].substring(fields[0].indexOf("=") + 1, fields[0].length());
 		String expires = null;
-		String path = null;
-		String domain = null;
+		String path = "/";
+		String domain = "/";
 		boolean secure = false;
+		@SuppressWarnings("unused")
+		boolean httpOnly = false;
+		long maxAge = 0L;
 		
 		for (int i = 1; i < fields.length; i ++) {
-			if (fields[i].equalsIgnoreCase("secure")) {
+			String field = fields[i].trim();
+			
+			if (field.equalsIgnoreCase("secure")) {
 				secure = true;
 				continue;
 			}
-			String[] nvp = fields[i].split("=");
-			
-			if (nvp.length < 2) {
+			if (field.equalsIgnoreCase("HttpOnly")) {
+				httpOnly = true;
 				continue;
 			}
-			if (nvp[0].equals("expires")) {
-				expires = nvp[1];
+			if (!field.contains("=")) {
+				System.err.println("Malformed cookie field: " + fields[i]);
 				continue;
 			}
-			if (nvp[0].equals("domain")) {
-				domain = nvp[1];
+			String fieldKey = field.substring(0, field.indexOf("=")).trim();
+			String fieldValue = field.substring(field.indexOf("=") + 1, field.length());
+
+			if (fieldKey.equals("expires")) {
+				expires = fieldValue;
 				continue;
 			}
-			if (nvp[0].equals("path")) {
-				path = nvp[1];
+			if (fieldKey.equals("domain")) {
+				domain = fieldValue;
 				continue;
 			}
+			if (fieldKey.equals("path")) {
+				path = fieldValue;
+				continue;
+			}
+			if (fieldKey.equals("Max-Age")) {
+				maxAge = Maths.parseLong(fieldValue, 0L);
+				continue;
+			}
+			System.err.println("Unhandled cookie field: " + fields[i]);
 		}
-		return new Cookie(cookieName, cookieValue, expires, path, domain, secure);
+		return new Cookie(key, value, expires, path, domain, secure, maxAge);
 	}
 	
 	/**

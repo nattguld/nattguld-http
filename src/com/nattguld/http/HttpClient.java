@@ -55,7 +55,7 @@ import com.nattguld.util.Misc;
 public class HttpClient implements AutoCloseable {
 	
 	/**
-	 * The HTTP socket.
+	 * The http socket.
 	 */
 	private final HttpSocket httpSocket;
 	
@@ -315,6 +315,7 @@ public class HttpClient implements AutoCloseable {
 			
 		} catch (Exception ex) {
 			return handleRequestException("Exception", ex, host, request);
+			
 		}
 		if (rr.getCode() != request.getCode()) {
 			if (rr.getResponseStatus().getHttpCode().isRedirection()) {
@@ -528,7 +529,7 @@ public class HttpClient implements AutoCloseable {
 	 */
 	public String fetchIP() {
 		try {
-			RequestResponse rr = dispatchRequest(new GetRequest("https://api.ipify.org/"));
+			RequestResponse rr = dispatchRequest(new GetRequest("https://api.ipify.org/").setNoRef(true));
 		
 			if (!rr.validate()) {
 				return "Failed to fetch IP";
