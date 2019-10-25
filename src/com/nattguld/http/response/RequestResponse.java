@@ -155,6 +155,34 @@ public class RequestResponse {
 		return headers;
 	}
 	
+	/**
+	 * Parses a document to the response.
+	 * 
+	 * @param html The html content.
+	 * 
+	 * @return The parsed document.
+	 */
+	public Document parseDocument(String html) {
+		String baseUri = NetUtil.getBaseUrl(endpoint);
+		
+		try (InputStream in = new ByteArrayInputStream(html.getBytes("UTF-8"))) {
+    		doc = Jsoup.parse(in, "UTF-8", baseUri, Parser.htmlParser());
+    		
+    	} catch (Exception ex) {
+    		ex.printStackTrace();
+    		
+    		try {
+    			doc = Jsoup.parse(new String(html.getBytes(), "UTF-8"), baseUri);
+    			doc.outputSettings().charset("UTF-8");
+    			
+    		} catch (UnsupportedEncodingException ex2) {
+    			ex2.printStackTrace();
+				doc = Jsoup.parse(html, baseUri);
+			}
+    	}
+		return doc;
+	}
+	
     /**
      * Retrieves the response content as HTML document.
      * 
@@ -162,27 +190,22 @@ public class RequestResponse {
      */
     public Document getAsDoc() {
     	if (Objects.isNull(doc)) {
-    		String baseUri = NetUtil.getBaseUrl(endpoint);
-    		String content = getResponseContent().contains("<html>") 
-        			? getResponseContent() : ("<html><head></head><body>" + getResponseContent() + "</body></html>");
-        			
-        	try (InputStream in = new ByteArrayInputStream(content.getBytes("UTF-8"))) {
-        		doc = Jsoup.parse(in, "UTF-8", baseUri, Parser.htmlParser());
-        		
-        	} catch (Exception ex) {
-        		ex.printStackTrace();
-        		
-        		try {
-        			doc = Jsoup.parse(new String(content.getBytes(), "UTF-8"), baseUri);
-        			doc.outputSettings().charset("UTF-8");
-        			
-        		} catch (UnsupportedEncodingException ex2) {
-        			ex2.printStackTrace();
-    				doc = Jsoup.parse(content, baseUri);
-    			}
-        	}
+    		doc = parseDocument(getResponseContent().contains("<html>") 
+        			? getResponseContent() : ("<html><head></head><body>" + getResponseContent() + "</body></html>"));
     	}
     	return doc;
+    }
+    
+    /**
+     * Assigns a json element as response.
+     * 
+     * @param jsonEl The json element.
+     * 
+     * @return The request.
+     */
+    public RequestResponse setJsonElement(JsonElement jsonEl) {
+    	this.jsonEl = jsonEl;
+    	return this;
     }
     
     /**

@@ -150,19 +150,19 @@ public class HeaderDecoder implements IResponseDecoder {
 			String fieldKey = field.substring(0, field.indexOf("=")).trim();
 			String fieldValue = field.substring(field.indexOf("=") + 1, field.length());
 
-			if (fieldKey.equals("expires")) {
+			if (fieldKey.equalsIgnoreCase("expires")) {
 				expires = fieldValue;
 				continue;
 			}
-			if (fieldKey.equals("domain")) {
+			if (fieldKey.equalsIgnoreCase("domain")) {
 				domain = fieldValue;
 				continue;
 			}
-			if (fieldKey.equals("path")) {
+			if (fieldKey.equalsIgnoreCase("path")) {
 				path = fieldValue;
 				continue;
 			}
-			if (fieldKey.equals("Max-Age")) {
+			if (fieldKey.equalsIgnoreCase("Max-Age")) {
 				maxAge = Maths.parseLong(fieldValue, 0L);
 				continue;
 			}
