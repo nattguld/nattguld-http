@@ -3,10 +3,12 @@ package com.nattguld.http.proxies;
 import java.util.Arrays;
 import java.util.Objects;
 
+import com.nattguld.http.pooling.ProxyPool;
 import com.nattguld.http.proxies.cfg.ProxyChoice;
 import com.nattguld.http.proxies.cfg.ProxyConfig;
 import com.nattguld.http.proxies.rotating.ProxyGateway;
 import com.nattguld.util.maths.Maths;
+import com.nattguld.util.pooling.ObjectPool;
 
 /**
  * 
@@ -26,6 +28,35 @@ public class ProxyManager {
 	 */
 	public static final HttpProxy FIDDLER_PROXY = new HttpProxy("127.0.0.1", 8888);
 	
+	/**
+	 * The residential rotating proxy pool.
+	 */
+	private static ObjectPool residentialRotatingProxyPool;
+	
+	/**
+	 * The datacenter rotating proxy pool.
+	 */
+	private static ObjectPool datacenterRotatingProxyPool;
+	
+	/**
+	 * The imported proxy pool.
+	 */
+	private static ObjectPool importedProxyPool;
+	
+	
+	static {
+		/*residentialRotatingProxyPool = new ObjectPool(ProxyConfig.getConfig().getResidentialGateway().getMaxParallel());
+		
+		datacenterRotatingProxyPool = new ObjectPool(ProxyConfig.getConfig().getDatacenterGateway().getMaxParallel());
+		
+		importedProxyPool = new ObjectPool<HttpProxy>(-1) {
+			@Override
+			protected HttpProxy createElement() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+		};*/
+	}
 
 	/**
 	 * Retrieves a random imported proxy.

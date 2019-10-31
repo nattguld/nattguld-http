@@ -3,7 +3,6 @@ package com.nattguld.http.content.bodies;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
@@ -111,7 +110,7 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 		boolean lastEntryWasFile = false;
 		
 		for (AttributeKeyValuePair kvp : kvps) {
-			String key = new String(kvp.getKey().getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8);
+			String key = new String(kvp.getKey().getBytes(StandardCharsets.UTF_8));
 			lastEntryWasFile = true;
 			
 			httpStream.writeLine("--" + boundary);
@@ -139,8 +138,8 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 				continue;
 			}
 			String value = kvp.getValue() instanceof String ? kvp.getValueAsString() : String.valueOf(kvp.getValue());
-			value = new String(value.getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8);
-			//value = URLEncoder.encode(value, "UTF-8"); //TODO not gud, some sites dont like this
+			value = new String(value.getBytes(StandardCharsets.UTF_8));
+			
 			lastEntryWasFile = false;
 			
 			writeStringPart(httpStream, key, value);
@@ -172,7 +171,7 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 		httpStream.writeLine("Content-Disposition: form-data; name=\"" + key + "\"");
 		//httpStream.writeLine("Content-Type: text/plain; charset=UTF-8");
 		httpStream.writeLine();
-		httpStream.writeLine(new String(value.getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8));
+		httpStream.writeLine(value);
 		httpStream.flush();
 	}
 	

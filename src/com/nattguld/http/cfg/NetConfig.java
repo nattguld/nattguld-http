@@ -5,6 +5,7 @@ import com.nattguld.data.cfg.ConfigManager;
 import com.nattguld.data.json.JsonReader;
 import com.nattguld.data.json.JsonWriter;
 import com.nattguld.http.DataCounter;
+import com.nattguld.util.SystemUtil;
 
 /**
  * 
@@ -43,7 +44,7 @@ public class NetConfig extends Config {
 	/**
 	 * The default read timeout.
 	 */
-	private int readTimeout = 120;
+	private int readTimeout = 90;
 	
 	/**
 	 * The preferred chunk size for chunked uploads.
@@ -60,6 +61,11 @@ public class NetConfig extends Config {
 	 */
 	private boolean saveDataMode;
 	
+	/**
+	 * The maximum simultaneous network connections allowed.
+	 */
+	private int maxConnections = SystemUtil.getCPUCores() * 50;
+	
 
 	@Override
 	protected void read(JsonReader reader) {
@@ -67,11 +73,12 @@ public class NetConfig extends Config {
 		this.debug = reader.getAsBoolean("debug", false);
 		this.doNotTrack = reader.getAsBoolean("do_not_track", false);
 		this.transferProgress = reader.getAsBoolean("transfer_progress", true);
-		this.connectionTimeout = reader.getAsInt("connection_timeout", 90);
-		this.readTimeout = reader.getAsInt("read_timeout", 120);
+		this.connectionTimeout = reader.getAsInt("connection_timeout", 120);
+		this.readTimeout = reader.getAsInt("read_timeout", 90);
 		this.chunkSize = reader.getAsInt("chunk_size", 11534336);
 		this.cellularDataCounter = (DataCounter)reader.getAsObject("data_counter_cellular", DataCounter.class, new DataCounter());
 		this.saveDataMode = reader.getAsBoolean("save_data_mode", false);
+		this.maxConnections = reader.getAsInt("max_connections", SystemUtil.getCPUCores() * 50);
 	}
 
 	@Override
@@ -85,11 +92,33 @@ public class NetConfig extends Config {
 		writer.write("chunk_size", chunkSize);
 		writer.write("data_counter_cellular", cellularDataCounter);
 		writer.write("save_data_mode", saveDataMode);
+		writer.write("max_connections", maxConnections);
 	}
 	
 	@Override
 	protected String getSaveFileName() {
 		return ".http_config";
+	}
+	
+	/**
+	 * Modifies the maximum simultaneous network connections allowed.
+	 * 
+	 * @param maxConnections The new maximum simultaneous network connections allowed.
+	 * 
+	 * @return The config.
+	 */
+	public NetConfig setMaxConnections(int maxConnections) {
+		this.maxConnections = maxConnections;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the maximum simultaneous network connections allowed.
+	 * 
+	 * @return The maximum simultaneous network connections allowed.
+	 */
+	public int getMaxConnections() {
+		return maxConnections;
 	}
 	
 	/**

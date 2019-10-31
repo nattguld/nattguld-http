@@ -1,7 +1,6 @@
 package com.nattguld.http.content.bodies;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.nattguld.http.content.ContentBody;
@@ -37,7 +36,7 @@ public class StringBody extends ContentBody<String> {
 
 	@Override
 	protected void build(HTTPOutputStream httpStream, boolean prepare) throws IOException {
-		httpStream.writeString(new String(content.getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8));
+		httpStream.writeString(new String(content.getBytes(StandardCharsets.UTF_8)));
 	}
 	
 	/**

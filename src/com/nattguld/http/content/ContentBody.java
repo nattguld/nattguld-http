@@ -2,8 +2,6 @@ package com.nattguld.http.content;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.stream.HTTPOutputStream;
@@ -68,9 +66,8 @@ public abstract class ContentBody<T> {
 	 */
 	public ContentBody<T> prepare(Headers headers) {
 		try (HTTPOutputStream httpStream = new HTTPOutputStream()) {
-			try (OutputStreamWriter osw = new OutputStreamWriter(httpStream, Charset.forName("UTF-8").newEncoder())) {
-				build(httpStream, true);
-			}
+			build(httpStream, true);
+			
 			setContentLength(httpStream.size());
 			setContentHeaders(headers);
 			
@@ -90,9 +87,7 @@ public abstract class ContentBody<T> {
 	 */
 	public ContentBody<T> write(OutputStream out) {
 		try (HTTPOutputStream httpStream = new HTTPOutputStream()) {
-			try (OutputStreamWriter osw = new OutputStreamWriter(httpStream, Charset.forName("UTF-8").newEncoder())) {
-				build(httpStream, false);
-			}
+			build(httpStream, false);
 			httpStream.writeTo(out);
 			
 		} catch (IOException ex) {

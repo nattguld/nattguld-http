@@ -2,6 +2,7 @@ package com.nattguld.http.stream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 
 /**
@@ -60,24 +61,9 @@ public class HTTPOutputStream extends ByteArrayOutputStream {
 	 * @throws IOException
 	 */
 	public HTTPOutputStream writeString(String s) throws UnsupportedEncodingException, IOException {
-		return writeString(s, "UTF-8");
-	}
-	
-	/**
-	 * Writes a string.
-	 * 
-	 * @param s The string.
-	 * 
-	 * @param charSet The character set.
-	 * 
-	 * @return The stream.
-	 * 
-	 * @throws UnsupportedEncodingException
-	 * 
-	 * @throws IOException
-	 */
-	public HTTPOutputStream writeString(String s, String charSet) throws UnsupportedEncodingException, IOException {
-		write(s.getBytes(charSet));
+		OutputStreamWriter osw = new OutputStreamWriter(this, "UTF-8");
+		osw.append(s);
+		osw.close();
 		return this;
 	}
 

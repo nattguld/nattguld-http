@@ -1,7 +1,6 @@
 package com.nattguld.http.content.bodies;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
@@ -82,10 +81,8 @@ public class FormBody extends ContentBody<List<AttributeKeyValuePair>> {
 		int index = 0;
 		
 		for (AttributeKeyValuePair kvp : kvps) {
-			//String key = URLEncoder.encode(kvp.getKey(), "UTF-8");
-			String value = new String(kvp.getValueAsString().getBytes(Charset.defaultCharset()), StandardCharsets.UTF_8);
-			//value = URLEncoder.encode(value, "UTF-8"); //TODO not gud, some sites dont like this
-			
+			String value = new String(kvp.getValueAsString().getBytes(StandardCharsets.UTF_8));
+				
 			if (!kvp.getKey().isEmpty()) {
 				httpStream.writeString(kvp.getKey() + "=" + value);
 			}

@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -23,6 +23,7 @@ import com.nattguld.http.browser.Browser;
 import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.content.cookies.CookieJar;
 import com.nattguld.http.headers.Headers;
+import com.nattguld.http.pooling.SocketPool;
 import com.nattguld.http.proxies.HttpProxy;
 import com.nattguld.http.proxies.cfg.ProxyConfig;
 import com.nattguld.http.proxies.rotating.ProxyUsageMonitor;
@@ -157,7 +158,7 @@ public class HttpClient implements AutoCloseable {
 	 * @param policies The connection policies.
 	 */
 	public HttpClient(Browser browser, HttpProxy proxy, ConnectionPolicy... policies) {
-		this.httpSocket = new HttpSocket();
+		this.httpSocket = SocketPool.getSingleton().getElement();
 		this.dataCounter = new DataCounter();
 		this.proxy = proxy;
 		this.browser = browser;
@@ -191,6 +192,7 @@ public class HttpClient implements AutoCloseable {
 		if (Objects.nonNull(proxy) && proxy instanceof RotatingProxy) {
 			ProxyUsageMonitor.setInUse((RotatingProxy)proxy, user, false);
 		}
+		SocketPool.getSingleton().release(httpSocket);
 	}
 
 	/**
@@ -234,7 +236,7 @@ public class HttpClient implements AutoCloseable {
 		}
 		try (Socket socket = httpSocket.connect(proxy, host, browser, ssl, request.getPort())) {
 			try (BufferedOutputStream out = new BufferedOutputStream(new CountOutputStream(socket.getOutputStream(), request.getDataCounter()))) {
-				PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8").newEncoder()), true) {
+				PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), true) {
 					@Override
 					public void println(String s) {
 						super.println(s);
@@ -330,12 +332,12 @@ public class HttpClient implements AutoCloseable {
 						
 					if (Objects.nonNull(redirectUrl)) {
 						if (!redirectUrl.startsWith("http")) {
-							if (Objects.isNull(lastReferer)) {
+							/*if (Objects.isNull(lastReferer)) {
 								redirects = 0;
 								request.setAttempts(0);
 								return new RequestResponse(redirectUrl, new ResponseStatus(HTTPCode.UNKNOWN, "Failed to redirect")
 										, new StringResponseBody("Failed to auto redirect for " + request.getUrl()), null);
-							}
+							}*/
 							redirectUrl = NetUtil.getBaseUrl(request.getUrl()) + redirectUrl;
 						}
 						if (NetConfig.getConfig().isDebug()) {
