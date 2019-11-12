@@ -420,9 +420,9 @@ public class HttpClient implements AutoCloseable {
 	 * @return The new request response.
 	 */
 	private RequestResponse handleRequestException(String message, Exception ex, String host, Request request, boolean ssl) {
-		//if (NetConfig.getConfig().isDebug()) {
+		if (NetConfig.getConfig().isDebug()) {
 			ex.printStackTrace();
-		//}
+		}
 		System.err.println(message + " (" + host + ") [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
 		return dispatchRequest(request, message + " (" + host + ") [" + request.getRequestType().getName() + " => " + request.getUrl() + "]", ssl);
 	}
