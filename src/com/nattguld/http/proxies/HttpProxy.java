@@ -1,9 +1,14 @@
 package com.nattguld.http.proxies;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
-import com.nattguld.util.hashing.Hasher;
+import com.nattguld.data.json.JsonReader;
+import com.nattguld.data.json.JsonResource;
+import com.nattguld.data.json.JsonWriter;
+import com.nattguld.http.proxies.cfg.LocalProxyConfig;
+import com.nattguld.util.maths.Maths;
 
 /**
  * 
@@ -11,15 +16,25 @@ import com.nattguld.util.hashing.Hasher;
  *
  */
 
-public class HttpProxy {
+public class HttpProxy extends JsonResource {
+	
+	/**
+	 * The UUID.
+	 */
+	private final String uuid;
+	
+	/**
+	 * The local proxy config.
+	 */
+	private final LocalProxyConfig lCfg;
 	
 	/**
 	 * The proxy type.
 	 */
-	private final ProxyType type;
+	private final ProxyType proxyType;
 	
 	/**
-	 * The host.
+	 * The host address.
 	 */
 	private final String host;
 	
@@ -29,94 +44,199 @@ public class HttpProxy {
 	private final int port;
 	
 	/**
-	 * The authentication username.
+	 * The proxy authentication credentials.
 	 */
-	private final String username;
+	private final ProxyAuthCredentials authCreds;
 	
 	/**
-	 * The authentication password.
+	 * The proxy state.
 	 */
-	private final String password;
+	private ProxyState state;
 	
-	/**
-	 * The base 64 auth.
-	 */
-	private String base64Auth;
-
 	
 	/**
 	 * Creates a new proxy.
 	 * 
-	 * @param type The proxy type.
-	 * 
-	 * @param host host The host.
+	 * @param host The host address.
 	 * 
 	 * @param port The port.
-	 * 
-	 * @param username The authentication username.
-	 * 
-	 * @param password The authentication password.
-	 */
-	public HttpProxy(String host, int port, String username, String password) {
-		this(ProxyType.HTTP, host, port, username, password);
-	}
-	
-	/**
-	 * Creates a new proxy.
-	 * 
-	 * @param host The host.
-	 * 
-	 * @param port The port.
-	 * 
-	 * @param source The proxy source.
 	 */
 	public HttpProxy(String host, int port) {
-		this(ProxyType.HTTP, host, port);
+		this(ProxyType.HTTP, host, port, null);
 	}
 	
 	/**
 	 * Creates a new proxy.
 	 * 
-	 * @param type The proxy type.
-	 * 
-	 * @param host host The host.
+	 * @param host The host address.
 	 * 
 	 * @param port The port.
 	 * 
-	 * @param source The proxy source.
+	 * @param authCreds The proxy authentication credentials.
 	 */
-	public HttpProxy(ProxyType type, String host, int port) {
-		this(type, host, port, null, null);
+	public HttpProxy(String host, int port, ProxyAuthCredentials authCreds) {
+		this(ProxyType.HTTP, host, port, authCreds);
 	}
 	
 	/**
 	 * Creates a new proxy.
 	 * 
-	 * @param type type The type.
+	 * @param proxyType The proxy type.
 	 * 
-	 * @param host host The host.
+	 * @param host The host address.
+	 * 
+	 * @param port The port.
+	 */
+	public HttpProxy(ProxyType proxyType, String host, int port) {
+		 this(new LocalProxyConfig(), proxyType, host, port, null);
+	}
+	
+	/**
+	 * Creates a new proxy.
+	 * 
+	 * @param proxyType The proxy type.
+	 * 
+	 * @param host The host address.
 	 * 
 	 * @param port The port.
 	 * 
-	 * @param username The authentication username.
-	 * 
-	 * @param password The authentication password.
+	 * @param authCreds The proxy authentication credentials.
 	 */
-	public HttpProxy(ProxyType type, String host, int port, String username, String password) {
-		this.type = type;
+	public HttpProxy(ProxyType proxyType, String host, int port, ProxyAuthCredentials authCreds) {
+		 this(new LocalProxyConfig(), proxyType, host, port, authCreds);
+	}
+	
+	/**
+	 * Creates a new proxy.
+	 * 
+	 * @param lCfg The local proxy config.
+	 * 
+	 * @param host The host address.
+	 * 
+	 * @param port The port.
+	 */
+	public HttpProxy(LocalProxyConfig lCfg, String host, int port) {
+		this(lCfg, ProxyType.HTTP, host, port, null);
+	}
+	
+	/**
+	 * Creates a new proxy.
+	 * 
+	 * @param lCfg The local proxy config.
+	 * 
+	 * @param host The host address.
+	 * 
+	 * @param port The port.
+	 * 
+	 * @param authCreds The proxy authentication credentials.
+	 */
+	public HttpProxy(LocalProxyConfig lCfg, String host, int port, ProxyAuthCredentials authCreds) {
+		this(lCfg, ProxyType.HTTP, host, port, authCreds);
+	}
+	
+	/**
+	 * Creates a new proxy.
+	 * 
+	 * @param lCfg The local proxy config.
+	 * 
+	 * @param proxyType The proxy type.
+	 * 
+	 * @param host The host address.
+	 * 
+	 * @param port The port.
+	 * 
+	 * @param authCreds The proxy authentication credentials.
+	 */
+	public HttpProxy(LocalProxyConfig lCfg, ProxyType proxyType, String host, int port, ProxyAuthCredentials authCreds) {
+		this.uuid = Maths.getUniqueId();
+		this.lCfg = lCfg;
+		this.proxyType = proxyType;
 		this.host = host;
 		this.port = port;
-		this.username = username;
-		this.password = password;
+		this.authCreds = authCreds;
+		this.state = ProxyState.ONLINE;
+	}
+	
+	/**
+	 * Creates a new proxy.
+	 * 
+	 * @param reader The json reader.
+	 */
+	public HttpProxy(JsonReader reader) {
+		super(reader);
+		
+		this.uuid = getReader().getAsString("uuid", Maths.getUniqueId());
+		this.lCfg = (LocalProxyConfig)getReader().getAsObject("local_config", LocalProxyConfig.class, new LocalProxyConfig());
+		this.proxyType = (ProxyType)getReader().getAsObject("type", ProxyType.class, ProxyType.HTTP);
+		this.host = getReader().getAsString("host");
+		this.port = getReader().getAsInt("port");
+		this.authCreds = (ProxyAuthCredentials)getReader().getAsObject("auth_credentials", ProxyAuthCredentials.class, null);
+		this.state = (ProxyState)getReader().getAsObject("state", ProxyState.class, ProxyState.ONLINE);
+	}
+	
+	@Override
+	public void write(JsonWriter writer) {
+		writer.write("uuid", uuid);
+		writer.write("local_config", lCfg);
+		writer.write("type", proxyType);
+		writer.write("host", host);
+		writer.write("port", port);
+		writer.write("auth_credentials", authCreds);
+		writer.write("state", state);
+	}
+	
+	@Override
+	protected String getSaveDirName() {
+		return "proxies" + File.separator + "standard";
+	}
+
+	@Override
+	protected String getSaveFileName() {
+		return getUUID() + ".sp";
+	}
+	
+	@Override
+	public String getUUID() {
+		return uuid;
+	}
+	
+	/**
+	 * Modifies the proxy state.
+	 * 
+	 * @param state The new proxy state.
+	 * 
+	 * @return The proxy.
+	 */
+	public HttpProxy setState(ProxyState state) {
+		this.state = state;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the proxy state.
+	 * 
+	 * @return The proxy state.
+	 */
+	public ProxyState getState() {
+		return state;
+	}
+	
+	/**
+	 * Retrieves the local config.
+	 * 
+	 * @return The local config.
+	 */
+	public LocalProxyConfig getLocalConfig() {
+		return lCfg;
 	}
 	
 	/**
 	 * Retrieves the proxy type.
 	 * 
-	 * @return The type.
+	 * @return The proxy type.
 	 */
 	public ProxyType getType() {
-		return type;
+		return proxyType;
 	}
 	
 	/**
@@ -138,54 +258,30 @@ public class HttpProxy {
 	}
 	
 	/**
-	 * Retrieves the address.
+	 * Retrieves the url.
 	 * 
-	 * @return The address.
+	 * @return The url.
 	 */
-	public String getAddress() {
+	public String getUrl() {
 		return getHost() + ":" + getPort();
 	}
 	
 	/**
-	 * Retrieves the authentication username.
+	 * Retrieves the proxy authentication credentials.
 	 * 
-	 * @return The authentication username.
+	 * @return The authentication credentials.
 	 */
-	public String getUsername() {
-		return username;
+	public ProxyAuthCredentials getAuthCreds() {
+		return authCreds;
 	}
 	
 	/**
-	 * Retrieves the authentication password.
-	 * 
-	 * @return The authentication password.
-	 */
-	public String getPassword() {
-		return password;
-	}
-	
-	/**
-	 * Retrieves whether the proxy has authentication or not.
+	 * Retrieves whether the proxy uses authentication or not.
 	 * 
 	 * @return The result.
 	 */
 	public boolean hasAuthentication() {
-		return Objects.nonNull(getUsername()) && Objects.nonNull(getPassword());
-	}
-	
-	/**
-	 * Retrieves the base64 authentication.
-	 * 
-	 * @return The base64 authentication.
-	 */
-	public String getBase64Auth() {
-		if (Objects.isNull(base64Auth)) {
-			if (!hasAuthentication()) {
-				return null;
-			}
-			this.base64Auth = Hasher.base64(username + ":" + password);
-		}
-		return base64Auth;
+		return Objects.nonNull(getAuthCreds());
 	}
 	
 	/**
@@ -198,13 +294,14 @@ public class HttpProxy {
 				, new InetSocketAddress(getHost(), getPort()));
 	}
 	
-	public String getAuthAddress() {
-		return getAddress() + (hasAuthentication() ? (":" + getUsername() + ":" + getPassword()) : "");
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof HttpProxy && ((HttpProxy)other).getUUID().equals(getUUID());
 	}
 	
 	@Override
 	public String toString() {
-		return getAuthAddress();
+		return getUrl() + (hasAuthentication() ? (":" + getAuthCreds().toString()) : "");
 	}
 
 }

@@ -9,8 +9,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+import com.nattguld.data.ResourceIO;
+import com.nattguld.data.json.JsonReader;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.response.bodies.IResponseBody;
 import com.nattguld.http.response.bodies.impl.StringResponseBody;
@@ -50,9 +50,9 @@ public class RequestResponse {
     private Document doc;
     
     /**
-     * The response content as json element.
+     * The response json reader.
      */
-    private JsonElement jsonEl;
+    private JsonReader jsonReader;
 	
 	
     /**
@@ -197,14 +197,14 @@ public class RequestResponse {
     }
     
     /**
-     * Assigns a json element as response.
+     * Assigns a json reader as response.
      * 
-     * @param jsonEl The json element.
+     * @param jsonReader The json reader.
      * 
      * @return The request.
      */
-    public RequestResponse setJsonElement(JsonElement jsonEl) {
-    	this.jsonEl = jsonEl;
+    public RequestResponse setJsonReader(JsonReader jsonReader) {
+    	this.jsonReader = jsonReader;
     	return this;
     }
     
@@ -213,11 +213,11 @@ public class RequestResponse {
      * 
      * @return The json element.
      */
-    public JsonElement getAsJsonElement() {
-    	if (Objects.isNull(jsonEl)) {
-    		jsonEl = new JsonParser().parse(getResponseContent());
+    public JsonReader getJsonReader() {
+    	if (Objects.isNull(jsonReader)) {
+    		jsonReader = ResourceIO.loadJsonFromString(getResponseContent());
     	}
-    	return jsonEl;
+    	return jsonReader;
     }
     
     /**

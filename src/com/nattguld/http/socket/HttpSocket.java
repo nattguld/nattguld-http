@@ -9,23 +9,22 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Map.Entry;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Objects;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import com.nattguld.http.HTTPCode;
-import com.nattguld.http.HttpClient;
 import com.nattguld.http.browser.Browser;
 import com.nattguld.http.cfg.NetConfig;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.proxies.HttpProxy;
-import com.nattguld.http.proxies.ProxyManager;
-import com.nattguld.http.requests.impl.GetRequest;
 import com.nattguld.http.response.decode.impl.HeaderDecoder;
 import com.nattguld.http.ssl.SSLManager;
 
@@ -38,55 +37,33 @@ import com.nattguld.http.ssl.SSLManager;
 public class HttpSocket {
 	
 	/**
-	 * The maximum amount of backlog entries to keep.
+	 * Holds the host resolves.
 	 */
-	private static final int MAX_BACKLOG_SIZE = 5000;
-	
-	/**
-	 * Holds the hosts that need their host name resolved.
-	 */
-	private static List<String> resolveHostName = new CopyOnWriteArrayList<>();
+	private final List<String> hostResolves = new ArrayList<>();
 	
 	/**
 	 * Holds the SSL hosts.
 	 */
-	private static List<String> sslHosts = new CopyOnWriteArrayList<>();
+	private final List<String> sslHosts = new ArrayList<>();
 
 	
 	/**
-	 * Adds a given value to a given list's backlog.
+	 * Sets the default socket configs on a given socket.
 	 * 
-	 * @param list The list.
+	 * @param socket The socket.
 	 * 
-	 * @param value The value.
+	 * @param browser The virtual browser using the socket.
+	 * 
+	 * @throws SocketException 
 	 */
-	private static void backlog(List<String> list, String value) {
-		if (list.contains(value)) {
-			list.remove(value);
-		}
-		list.add(value);
-		
-		if (list.size() > MAX_BACKLOG_SIZE) {
-			list.remove(0);
-		}
-	}
-	
-	/**
-	 * Logs an SSL host.
-	 * 
-	 * @param host The host.
-	 */
-	private static void logSSL(String host) {
-		backlog(sslHosts, host);
-	}
-	
-	/**
-	 * Logs a resolve host name.
-	 * 
-	 * @param hostName The host name.
-	 */
-	private static void logResolveHostName(String hostName) {
-		backlog(resolveHostName, hostName);
+	private void setSocketConfigs(Socket socket, Browser browser) throws SocketException {
+		socket.setSoTimeout(browser.getConnectionTimeout() * 1000);
+		socket.setKeepAlive(false); //TODO Experimental - usually: true
+		socket.setSendBufferSize(65536);
+		socket.setReceiveBufferSize(65536);
+		socket.setTcpNoDelay(true);
+		socket.setSoLinger(true, 0); //TODO Experimental
+		socket.setReuseAddress(false); //TODO Experimental
 	}
 	
 	/**
@@ -94,33 +71,30 @@ public class HttpSocket {
 	 * 
 	 * @param proxy The proxy to tunnel through if any.
 	 * 
-	 * @param url The url to connect to.
+	 * @param host The target server host.
 	 * 
-	 * @param ssl Whether to use SSL or not.
+	 * @param port The target server port.
 	 * 
 	 * @param browser The browser configurations.
 	 * 
+	 * @param ssl Whether to force the use of SSL or not.
+	 * 
 	 * @throws Exception
 	 */
-	public Socket connect(HttpProxy proxy, String host, Browser browser, boolean ssl, int port) throws Exception {
-		Socket socket = (ssl || (Objects.nonNull(proxy) && proxy.hasAuthentication()))
-				? connectSSL(proxy, host, browser, port) 
-						: connect(proxy, host, browser, port);
-		socket.setSoTimeout(browser.getConnectionTimeout() * 1000);
-		socket.setKeepAlive(true);
-		socket.setReuseAddress(true);
-		socket.setSendBufferSize(65536);
-		socket.setReceiveBufferSize(65536);
-		socket.setTcpNoDelay(true);
-		return socket;
+	public Socket connect(HttpProxy proxy, String host, int port, Browser browser, boolean ssl) throws Exception {
+		return (ssl || (Objects.nonNull(proxy) && proxy.hasAuthentication()))
+				? connectSSL(proxy, host, port, browser) 
+						: connect(proxy, host, port, browser);
 	}
 	
 	/**
-	 * Retrieves a default socket.
+	 * Connects to a standard socket.
 	 * 
 	 * @param proxy The proxy to tunnel through if any.
 	 * 
 	 * @param host The target server host.
+	 * 
+	 * @param port The target server port.
 	 * 
 	 * @param browser The browser configurations.
 	 * 
@@ -128,13 +102,37 @@ public class HttpSocket {
 	 * 
 	 * @throws IOException
 	 */
-	private Socket connect(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
+	private Socket connect(HttpProxy proxy, String host, int port, Browser browser) throws IOException {
 		if (sslHosts.contains(host)) {
-			return connectSSL(proxy, host, browser, port);
+			return connectSSL(proxy, host, port, browser);
+		}
+		boolean isResolvable = hostResolves.contains(host);
+		String contactHost = host;
+		
+		if (isResolvable) {
+			try {
+				contactHost = InetAddress.getByName(host).getHostAddress();
+				
+			} catch (UnknownHostException ex) {
+				throw ex;
+			}
 		}
 		Socket socket = new Socket(Objects.nonNull(proxy) ? proxy.toJavaProxy() : Proxy.NO_PROXY);
-		socket.connect(new InetSocketAddress(host, port));
-		return socket;
+		setSocketConfigs(socket, browser);
+		
+		try {
+			socket.connect(new InetSocketAddress(contactHost, port));
+			return socket;
+			
+		} catch (IOException ex) {
+			if (isResolvable) {
+				hostResolves.remove(host);
+				ex.printStackTrace();
+				return socket;
+			}
+			hostResolves.add(host);
+			return connect(proxy, host, port, browser);
+		}
 	}
 	
 	/**
@@ -144,46 +142,59 @@ public class HttpSocket {
 	 * 
 	 * @param host The target server host.
 	 * 
+	 * @param port The target server port.
+	 * 
 	 * @param browser The browser configurations.
 	 * 
 	 * @return The SSL socket.
 	 * 
 	 * @throws IOException
 	 */
-	private Socket connectSSL(HttpProxy proxy, String host, Browser browser, int port) throws IOException {
-		logSSL(host);
-		
+	private Socket connectSSL(HttpProxy proxy, String host, int port, Browser browser) throws IOException {
+		boolean isResolvable = hostResolves.contains(host);
 		String contactHost = host;
 		
-		if (resolveHostName.contains(host)) {
-			InetAddress ia = InetAddress.getByName(contactHost);
-			contactHost = ia.getHostAddress();
+		if (isResolvable) {
+			try {
+				contactHost = InetAddress.getByName(host).getHostAddress();
+				
+			} catch (UnknownHostException ex) {
+				throw ex;
+			}
 		}
 		SSLSocketFactory sslSocketFactory = SSLManager.buildSocketFactory();
 		SSLSocket sslSocket = null;
 		
 		if (Objects.nonNull(proxy)) {
 			Socket tunnel = new Socket(proxy.getHost(), proxy.getPort());
-			
-			doTunnelHandshake(tunnel, proxy, contactHost, browser, 443);
-			
+			setSocketConfigs(tunnel, browser);
+				
+			doTunnelHandshake(tunnel, proxy, contactHost, 443, browser);
+				
 			sslSocket = (SSLSocket)sslSocketFactory.createSocket(tunnel, contactHost, port, true);
 			
 		} else {
 			sslSocket = (SSLSocket)sslSocketFactory.createSocket(contactHost, 443);
 		}
+		setSocketConfigs(sslSocket, browser);
+			
 		try {
 			sslSocket.startHandshake();
-			
-		} catch (Exception ex) {
-			if (resolveHostName.contains(host)) {
+				
+			if (!sslHosts.contains(host)) {
+				sslHosts.add(host);
+			}
+			return sslSocket;
+				
+		} catch (IOException ex) {
+			if (isResolvable) {
+				hostResolves.remove(host);
 				ex.printStackTrace();
 				return sslSocket;
 			}
-			logResolveHostName(host);
-			return connectSSL(proxy, host, browser, port);
+			hostResolves.add(host);
+			return connectSSL(proxy, host, port, browser);
 		}
-		return sslSocket;
 	}
 	
 	/**
@@ -201,15 +212,15 @@ public class HttpSocket {
 	 * 
 	 * @throws IOException
 	 */
-    private void doTunnelHandshake(Socket tunnel, HttpProxy proxy, String host, Browser browser, int port) throws IOException {
+    private void doTunnelHandshake(Socket tunnel, HttpProxy proxy, String host, int port, Browser browser) throws IOException {
     	Headers headers = new Headers();
     	headers.add("Host", host + ":" + port);
     	headers.add("User-Agent", browser.getUserAgent());
     	headers.add("Connection", "keep-alive"); //close
     	
     	if (Objects.nonNull(proxy) && proxy.hasAuthentication()) {
-        	//headers.add("Proxy-Connection", "keep-alive");
-        	headers.add("Proxy-Authorization", "Basic " + proxy.getBase64Auth());
+        	headers.add("Proxy-Connection", "keep-alive");
+        	headers.add("Proxy-Authorization", "Basic " + proxy.getAuthCreds().getBase64Auth());
         }
     	StringBuilder raw = new StringBuilder();
     	
@@ -252,13 +263,6 @@ public class HttpSocket {
         if (NetConfig.getConfig().isDebug()) {
         	System.out.println("Tunneled through proxy for " + host + ":" + 443);
         }
-    }
-    
-    public static void main(String[] args) {
-    	try (HttpClient c = new HttpClient(ProxyManager.parse("127.0.0.1:8888"))) {
-    		System.out.println(c.dispatchRequest(new GetRequest("https://www.pornhub.com")).getCode());
-    		//System.out.println(c.dispatchRequest(new GetRequest("https://www.pornhub.com/")).getCode());
-    	}
     }
 
 }

@@ -1,9 +1,9 @@
 package com.nattguld.http.response.bodies;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,13 +35,13 @@ public class ResponseBodyParser {
 	 * 
 	 * @param responseHeaders The response headers.
 	 * 
-	 * @param in The input stream.
+	 * @param bis The input stream.
 	 * 
 	 * @return The response body.
 	 * 
 	 * @throws IOException
 	 */
-	public static IResponseBody<? extends Object> parseResponseBody(Request request, Headers responseHeaders, InputStream in) throws IOException {
+	public static IResponseBody<? extends Object> parseResponseBody(Request request, Headers responseHeaders, BufferedInputStream bis) throws IOException {
 		if (!request.isDecodeBody() && NetConfig.getConfig().isSaveDataMode()) {
 			return new StringResponseBody("Body decoding is turned off for this request");
 		}
@@ -73,9 +73,9 @@ public class ResponseBodyParser {
 			if (Objects.nonNull(responseHeaders.getValueIgnoreCase("Location"))) { //When it's a redirect we don't need to read any body
 				return new StringResponseBody("");
 			}
-			in = readChunks(in);
+			bis = readChunks(bis);
 			
-			if (Objects.isNull(in)) {
+			if (Objects.isNull(bis)) {
 				System.err.println("Failed to read chunks on " + request.getUrl());
 				
 				if (NetConfig.getConfig().isDebug()) {
@@ -83,10 +83,10 @@ public class ResponseBodyParser {
 				}
 				return download ? new FileResponseBody(null) : new StringResponseBody("Failed to read chunks");
 			}
-			if (bodySize > 0 && bodySize != in.available()) {
-				System.err.println("Unexpected body size for " + request.getUrl() + ", received " + in.available() + " instead of " + bodySize);
+			if (bodySize > 0 && bodySize != bis.available()) {
+				System.err.println("Unexpected body size for " + request.getUrl() + ", received " + bis.available() + " instead of " + bodySize);
 			}
-			bodySize = in.available();
+			bodySize = bis.available();
 		}
 		if (Objects.nonNull(contentLength) && contentLength.equals("0")) {
 			if (NetConfig.getConfig().isDebug()) {
@@ -112,7 +112,7 @@ public class ResponseBodyParser {
 				}
 			});
 		}
-		IResponseBody<? extends Object> responseBody = interpretor.interpret(in);
+		IResponseBody<? extends Object> responseBody = interpretor.interpret(bis);
 				
 		if (Objects.nonNull(executor)) {
 			executor.shutdownNow();
@@ -123,13 +123,13 @@ public class ResponseBodyParser {
 	/**
 	 * Writes the body chunks to an unchunked input stream.
 	 * 
-	 * @param in The original input stream.
+	 * @param bis The original input stream.
 	 * 
 	 * @return The unchunked input stream.
 	 * 
 	 * @throws IOException
 	 */
-	private static InputStream readChunks(InputStream in) throws IOException {
+	private static BufferedInputStream readChunks(BufferedInputStream bis) throws IOException {
 		byte[] bodyPayload = null; //Will hold our unchunked body payload once received
 		
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -138,7 +138,7 @@ public class ResponseBodyParser {
 			int chunkSize = 0; //The current chunk size we're supposed to receive
 			
 			while (true) {
-				byte b = (byte)in.read();
+				byte b = (byte)bis.read();
 				
 				if (b < 0) { //We reached the end of the input stream
 					break;
@@ -172,7 +172,7 @@ public class ResponseBodyParser {
 				
 				while (received < chunkSize) { //As long as we didn't receive the expected bytes, keep waiting and reading
 					byte[] chunkBuffer = new byte[chunkSize - received]; //Create a byte buffer with the chunk size
-					int readCount = in.read(chunkBuffer); //Fill up the chunk buffer and retrieve the amount of bytes we've read
+					int readCount = bis.read(chunkBuffer); //Fill up the chunk buffer and retrieve the amount of bytes we've read
 					baos.write(chunkBuffer, 0, readCount); //Write the chunk buffer to our unchunked body stream
 					received += readCount; //Add the count we read to our total received count
 				}
@@ -187,7 +187,7 @@ public class ResponseBodyParser {
 			System.err.println("Empty payload received after reading chunks");
 			return null;
 		}
-		return new ByteArrayInputStream(bodyPayload);
+		return new BufferedInputStream(new ByteArrayInputStream(bodyPayload));
 	}
 	
 }

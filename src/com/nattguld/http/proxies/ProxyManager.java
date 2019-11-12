@@ -1,14 +1,20 @@
 package com.nattguld.http.proxies;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-import com.nattguld.http.pooling.ProxyPool;
+import com.nattguld.data.json.JsonResourceManager;
+import com.nattguld.http.proxies.cfg.LocalProxyConfig;
 import com.nattguld.http.proxies.cfg.ProxyChoice;
 import com.nattguld.http.proxies.cfg.ProxyConfig;
-import com.nattguld.http.proxies.rotating.ProxyGateway;
+import com.nattguld.http.proxies.rotating.RotatingProxy;
+import com.nattguld.http.proxies.rotating.RotatingProxyManager;
+import com.nattguld.http.proxies.standard.StandardProxyManager;
+import com.nattguld.http.util.InternetConnectionType;
 import com.nattguld.util.maths.Maths;
-import com.nattguld.util.pooling.ObjectPool;
 
 /**
  * 
@@ -16,7 +22,7 @@ import com.nattguld.util.pooling.ObjectPool;
  *
  */
 
-public class ProxyManager {
+public abstract class ProxyManager extends JsonResourceManager<HttpProxy> {
 	
 	/**
 	 * Represents an invalid proxy for error handling.
@@ -27,175 +33,148 @@ public class ProxyManager {
 	 * The fiddler proxy.
 	 */
 	public static final HttpProxy FIDDLER_PROXY = new HttpProxy("127.0.0.1", 8888);
-	
-	/**
-	 * The residential rotating proxy pool.
-	 */
-	private static ObjectPool residentialRotatingProxyPool;
-	
-	/**
-	 * The datacenter rotating proxy pool.
-	 */
-	private static ObjectPool datacenterRotatingProxyPool;
-	
-	/**
-	 * The imported proxy pool.
-	 */
-	private static ObjectPool importedProxyPool;
-	
+
 	
 	static {
-		/*residentialRotatingProxyPool = new ObjectPool(ProxyConfig.getConfig().getResidentialGateway().getMaxParallel());
-		
-		datacenterRotatingProxyPool = new ObjectPool(ProxyConfig.getConfig().getDatacenterGateway().getMaxParallel());
-		
-		importedProxyPool = new ObjectPool<HttpProxy>(-1) {
+		ProxyConfig.getConfig();
+	}
+	
+	/**
+	 * Adds a proxy or retrieves it if it already exists.
+	 * 
+	 * @param proxy The proxy.
+	 * 
+	 * @return The proxy.
+	 */
+	public HttpProxy addOrRetrieve(HttpProxy proxy) {
+		add(proxy);
+		return getProxyByAddress(proxy.toString());
+	}
+	
+	@Override
+	public void add(HttpProxy proxy) {
+		super.add(proxy, new Predicate<HttpProxy>() {
 			@Override
-			protected HttpProxy createElement() {
-				// TODO Auto-generated method stub
-				return null;
+			public boolean test(HttpProxy proxy) {
+				return Objects.isNull(getProxyByAddress(proxy.toString()));
 			}
-		};*/
+		});
 	}
 
 	/**
-	 * Retrieves a random imported proxy.
-	 * 
-	 * @return The random imported proxy.
-	 */
-	public static HttpProxy getRandom() {
-		if (ProxyConfig.getConfig().getImportedProxies().isEmpty()) {
-			System.err.println("No proxies imported");
-			return null;
-		}
-		return ProxyConfig.getConfig().getImportedProxies().get(Maths.random(ProxyConfig.getConfig().getImportedProxies().size()));
-	}
-	
-	/**
-	 * Retrieves an imported proxy by it's address.
+	 * Retrieves a proxy by a given address.
 	 * 
 	 * @param address The address.
 	 * 
 	 * @return The proxy.
 	 */
-	public static HttpProxy getByAddress(String address) {
-		return ProxyConfig.getConfig().getImportedProxies().stream()
-				.filter(p -> p.getAddress().equals(address))
-				.findFirst()
-				.orElse(null);
+	public HttpProxy getProxyByAddress(String address) {
+		return getResources().stream()
+				.filter(p -> p.toString().equals(address))
+				.findFirst().orElse(null);
 	}
 	
 	/**
-	 * Parses a string to a proxy.
+	 * Parses a proxy from a given input string.
 	 * 
-	 * @param input The input.
+	 * @param lCfg The local proxy config.
 	 * 
-	 * @return The proxy.
+	 * @param proxyType The proxy type.
+	 * 
+	 * @param input The input string.
+	 * 
+	 * @return The parsed proxy if successful.
 	 */
-	public static HttpProxy parse(String input) {
-		return parse(ProxyType.HTTP, input);
-	}
-	
-	/**
-	 * Parses a string to a proxy.
-	 * 
-	 * @param type The proxy type.
-	 * 
-	 * @param input The input.
-	 * 
-	 * @return The proxy.
-	 */
-	public static HttpProxy parse(ProxyType type, String input) {
+	protected HttpProxy parseProxyString(LocalProxyConfig lCfg, ProxyType proxyType, String input) {
 		if (Objects.isNull(input)) {
+			System.err.println("[ProxyManager] Unable to parse proxy: nulled input");
 			return null;
 		}
 		String trim = input.trim();
 		
-		if (input.isEmpty()) {
+		if (trim.isEmpty()) {
+			System.err.println("[ProxyManager] Unable to parse proxy: empty input");
+			return null;
+		}
+		if (!trim.contains(":")) {
+			System.err.println("[ProxyManager] Unable to parse proxy: invalid format");
 			return null;
 		}
 		String[] parts = trim.split(":");
 		
-		if (parts.length != 2 && parts.length != 4) {
-			System.err.println("Invalid amount of parts (" + parts.length + ")");
+		if (parts.length < 2 || parts.length > 5) {
+			System.err.println("[ProxyManager] Unable to parse proxy: invalid amount of parts (" + parts.length + ")");
 			return null;
 		}
-		String host = parts[0];
-		String[] hostParts = host.split("\\.");
-		
-		if (hostParts.length != 4 && hostParts.length != 3) {
-			System.err.println("Invalid host address parts (" + host + ")");
+		String host = parts[0].trim();
+
+		if (host.split("\\.").length != 4) {
+			System.err.println("[ProxyManager] Unable to parse proxy: invalid host");
 			return null;
 		}
 		if (!Maths.isInteger(parts[1])) {
-			System.err.println("Port is not an integer value");
+			System.err.println("[ProxyManager] Unable to parse proxy: invalid port");
 			return null;
 		}
-		int port = Maths.parseInt(parts[1], -1);
-		String username = null;
-		String password = null;
+		int port = Maths.parseInt(parts[1].trim(), -1);
+		ProxyAuthCredentials authCreds = null;
 		
-		if (parts.length == 4) {
-			username = parts[2];
-			password = parts[3];
+		if (parts.length >= 4) {
+			authCreds = new ProxyAuthCredentials(parts[2].trim(), parts[3].trim());
 		}
-		return new HttpProxy(type, host, port, username, password);
+		return new HttpProxy(lCfg, proxyType, host, port, authCreds);
 	}
 	
 	/**
 	 * Retrieves a proxy based on proxy preferences.
 	 * 
-	 * @param proxyPrefs The proxy preferences.
+	 * @param choices The proxy choices.
 	 * 
 	 * @param user The user.
 	 * 
-	 * @param ignoreUsers Whether to ignore users or not.
-	 * 
-	 * @param ignoreCooldowns Whether to ignore cooldowns on proxies or not.
+	 * @param unique Whether the user should be unique to the proxy or not.
 	 * 
 	 * @return The proxy.
 	 */
-	public static HttpProxy getProxyByPreference(ProxyChoice[] choices, String user, boolean ignoreUsers, boolean ignoreCooldowns) {
+	public static HttpProxy getProxyByChoices(ProxyChoice[] choices, String user, boolean unique) {
 		if (ProxyConfig.getConfig().isFiddler()) {
     		return FIDDLER_PROXY;
     	}
-		if (Objects.isNull(choices) || choices.length < 1) {
-			System.err.println("No proxy choices passed");
-			return null;
+		if (Objects.isNull(choices) || choices.length <= 0) {
+			System.err.println("[ProxyManager]: No proxy choices passed");
+			return INVALID_PROXY;
 		}
 		for (ProxyChoice choice : choices) {
-			if (choice == ProxyChoice.ROTATING_RESIDENTIAL || choice == ProxyChoice.ROTATING_DATACENTER) {
-				ProxyGateway pg = choice == ProxyChoice.ROTATING_RESIDENTIAL 
-						? ProxyConfig.getConfig().getResidentialGateway()
-						: ProxyConfig.getConfig().getDatacenterGateway();
-				
-				if (Objects.isNull(pg)) {
-					continue;
-				}
-				return pg.getNext(user, ignoreUsers, ignoreCooldowns);
+			if (choice == ProxyChoice.DIRECT) {
+				return null;
 			}
 			if (choice == ProxyChoice.IMPORTED) {
-	    		HttpProxy p = getRandom();
+				HttpProxy proxy = StandardProxyManager.getSingleton().getRandomProxy(user, unique);
 	    		
-	    		if (Objects.isNull(p)) {
+	    		if (Objects.isNull(proxy)) {
 	    			continue;
 	    		}
-	    		return p;
+	    		return proxy;
 			}
-			if (choice == ProxyChoice.SCRAPED) { //TODO
-	    		/*HttpProxy p = getRandomScrapedProxy();
-	    		
-	    		if (Objects.isNull(p)) {
+			if (choice == ProxyChoice.MANUAL) {
+				System.err.println("[ProxyManager]: Manual is not a valid proxy choice");
+				return INVALID_PROXY;
+			}
+			if (choice == ProxyChoice.SCRAPED) {
+				System.err.println("[ProxyManager]: Scraped proxies are currently not supported");
+				return INVALID_PROXY;
+			}
+			if (choice == ProxyChoice.ROTATING_DATACENTER || choice == ProxyChoice.ROTATING_RESIDENTIAL) {
+				RotatingProxy rp = RotatingProxyManager.getSingleton().getRandomProxy(choice == ProxyChoice.ROTATING_DATACENTER ? InternetConnectionType.DATACENTER
+								: InternetConnectionType.RESIDENTIAL, user, unique);
+				
+				if (Objects.isNull(rp)) {
 	    			continue;
 	    		}
-	    		return p;*/
-				return INVALID_PROXY;
-	    	}
-	    	if (choice == ProxyChoice.DIRECT) {
-	    		return null;
-	    	}
-    	}
-		System.err.println("Failed to find proxy for choices: " + Arrays.toString(choices));
+				return rp;
+			}
+		}
+		System.err.println("[ProxyManager]: Failed to find proxy for choices: " + Arrays.toString(choices));
     	return INVALID_PROXY;
 	}
 	
@@ -205,16 +184,29 @@ public class ProxyManager {
 	 * @return The proxy choice.
 	 */
 	public static ProxyChoice findBestChoice() {
-		if (Objects.nonNull(ProxyConfig.getConfig().getResidentialGateway())) {
+		if (!RotatingProxyManager.getSingleton().getProxies(InternetConnectionType.RESIDENTIAL).isEmpty()) {
 			return ProxyChoice.ROTATING_RESIDENTIAL;
 		}
-		if (!ProxyConfig.getConfig().getImportedProxies().isEmpty()) {
+		if (!StandardProxyManager.getSingleton().getResources().isEmpty()) {
 			return ProxyChoice.IMPORTED;
 		}
-		if (Objects.nonNull(ProxyConfig.getConfig().getDatacenterGateway())) {
+		if (!RotatingProxyManager.getSingleton().getProxies(InternetConnectionType.DATACENTER).isEmpty()) {
 			return ProxyChoice.ROTATING_DATACENTER;
 		}
 		return ProxyChoice.DIRECT;
+	}
+	
+	/**
+	 * Retrieves the proxies matching a given proxy type.
+	 * 
+	 * @param proxyType The proxy type.
+	 * 
+	 * @return The proxies matching the given proxy type.
+	 */
+	public List<HttpProxy> getByProxyType(ProxyType proxyType) {
+		return getResources().stream()
+				.filter(p -> p.getType() == proxyType)
+				.collect(Collectors.toList());
 	}
 
 }

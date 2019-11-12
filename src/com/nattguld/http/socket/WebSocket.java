@@ -16,7 +16,6 @@ import com.nattguld.http.content.EncType;
 import com.nattguld.http.content.cookies.Cookie;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.proxies.HttpProxy;
-import com.nattguld.http.proxies.ProxyManager;
 import com.nattguld.http.requests.impl.GetRequest;
 import com.nattguld.http.response.RequestResponse;
 import com.nattguld.http.response.decode.impl.HeaderDecoder;

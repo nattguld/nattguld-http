@@ -1,7 +1,7 @@
 package com.nattguld.http.response;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.nattguld.http.response.bodies.IResponseBody;
@@ -45,7 +45,7 @@ public abstract class ResponseInterpretor<T extends IResponseBody<? extends Obje
 	 * 
 	 * @exception IOException
 	 */
-	public abstract T interpret(InputStream in) throws IOException;
+	public abstract T interpret(BufferedInputStream bis) throws IOException;
 
 	
 	/**

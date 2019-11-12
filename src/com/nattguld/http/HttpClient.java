@@ -1,9 +1,9 @@
 package com.nattguld.http;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ConnectException;
@@ -26,7 +26,6 @@ import com.nattguld.http.headers.Headers;
 import com.nattguld.http.pooling.SocketPool;
 import com.nattguld.http.proxies.HttpProxy;
 import com.nattguld.http.proxies.cfg.ProxyConfig;
-import com.nattguld.http.proxies.rotating.ProxyUsageMonitor;
 import com.nattguld.http.proxies.rotating.RotatingProxy;
 import com.nattguld.http.requests.ContentRequest;
 import com.nattguld.http.requests.Request;
@@ -89,11 +88,6 @@ public class HttpClient implements AutoCloseable {
 	 * The connection security handler if required.
 	 */
 	private ConnectionSecurityHandler conSecHandler;
-	
-	/**
-	 * Whether SSL should be used or not.
-	 */
-	private boolean ssl;
 	
 	/**
 	 * The last refered url.
@@ -182,15 +176,15 @@ public class HttpClient implements AutoCloseable {
 		this.user = user;
 		
 		if (Objects.nonNull(proxy) && proxy instanceof RotatingProxy) {
-			ProxyUsageMonitor.setInUse((RotatingProxy)proxy, user, true);
+			((RotatingProxy)proxy).setInUse(user);
 		}
 		return this;
 	}
 	
 	@Override
 	public void close() {
-		if (Objects.nonNull(proxy) && proxy instanceof RotatingProxy) {
-			ProxyUsageMonitor.setInUse((RotatingProxy)proxy, user, false);
+		if (Objects.nonNull(proxy)) {
+			proxy.getLocalConfig().removeUser(user);
 		}
 		SocketPool.getSingleton().release(httpSocket);
 	}
@@ -203,7 +197,7 @@ public class HttpClient implements AutoCloseable {
 	 * @return The request response.
 	 */
 	public RequestResponse dispatchRequest(Request request) {
-		return dispatchRequest(request, "Initial");
+		return dispatchRequest(request, "Initial", false);
 	}
 	
 	/**
@@ -213,9 +207,11 @@ public class HttpClient implements AutoCloseable {
 	 * 
 	 * @param lastError The last error.
 	 * 
+	 * @param ssl Whether to enforce SSL or not.
+	 * 
 	 * @return The request response.
 	 */
-	public RequestResponse dispatchRequest(Request request, String lastError) {
+	public RequestResponse dispatchRequest(Request request, String lastError, boolean ssl) {
 		request.setAttempts(request.getAttempts() + 1);
 		
 		if (request.getAttempts() > browser.getConnectionAttempts()) {
@@ -234,7 +230,7 @@ public class HttpClient implements AutoCloseable {
 		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Host: " + host + ", Endpoint: " + endpoint);
 		}
-		try (Socket socket = httpSocket.connect(proxy, host, browser, ssl, request.getPort())) {
+		try (Socket socket = httpSocket.connect(proxy, host, request.getPort(), browser, ssl)) {
 			try (BufferedOutputStream out = new BufferedOutputStream(new CountOutputStream(socket.getOutputStream(), request.getDataCounter()))) {
 				PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), true) {
 					@Override
@@ -267,9 +263,9 @@ public class HttpClient implements AutoCloseable {
 				}
 				out.flush();
 
-				try (InputStream in = new CountInputStream(socket.getInputStream(), request.getDataCounter())) {
+				try (BufferedInputStream bis = new BufferedInputStream(new CountInputStream(socket.getInputStream(), request.getDataCounter()))) {
 					HeaderDecoder hd = new HeaderDecoder();
-					hd.decode(in);
+					hd.decode(bis);
 
 					ResponseStatus rs = hd.getResponseStatus();
 					Headers responseHeaders = hd.getHeaders();
@@ -281,8 +277,9 @@ public class HttpClient implements AutoCloseable {
 					cookieJar.importCookies(hd.getCookies());
 					
 					IResponseBody<?> responseBody = rs.getHttpCode() != HTTPCode.NO_CONTENT 
-							? ResponseBodyParser.parseResponseBody(request, responseHeaders, in) : new StringResponseBody("");
+							? ResponseBodyParser.parseResponseBody(request, responseHeaders, bis) : new StringResponseBody("");
 					rr = new RequestResponse(request.getUrl(), rs, responseBody, responseHeaders);
+
 				}
 				writer.close();
 
@@ -298,25 +295,25 @@ public class HttpClient implements AutoCloseable {
 				dataCounter.addDown(request.getDataCounter().getDown());
 			}
 		} catch (UnknownHostException ex) {
-			return handleRequestException("Unknown host", ex, host, request);
+			return handleRequestException("Unknown host", ex, host, request, ssl);
 			
 		} catch (ConnectException ex) {
-			return handleRequestException("Connection refused", ex, host, request);
+			return handleRequestException("Connection refused", ex, host, request, ssl);
 			
 		} catch (SocketException ex) {
-			return handleRequestException("Socket exception", ex, host, request);
+			return handleRequestException("Socket exception", ex, host, request, ssl);
 			
 		} catch (SocketTimeoutException ex) {
-			return handleRequestException("Timed out", ex, host, request);
+			return handleRequestException("Timed out", ex, host, request, ssl);
 			
 		} catch (SSLHandshakeException ex) {
-			return handleRequestException("SSL handshake exception", ex, host, request);
+			return handleRequestException("SSL handshake exception", ex, host, request, ssl);
 			
 		} catch (IOException ex) {
-			return handleRequestException("IO exception", ex, host, request);
+			return handleRequestException("IO exception", ex, host, request, ssl);
 			
 		} catch (Exception ex) {
-			return handleRequestException("Exception", ex, host, request);
+			return handleRequestException("Exception", ex, host, request, ssl);
 			
 		}
 		if (rr.getCode() != request.getCode()) {
@@ -344,10 +341,9 @@ public class HttpClient implements AutoCloseable {
 							System.out.println("Redirect (" + rr.getCode() + ") => " + redirectUrl + " [Last GET: " + lastReferer + "][Location: " + rr.getLocation() + "]");	
 						}
 						if (rr.getCode() == 301 && redirectUrl.equals(request.getUrl())) {
-							ssl = true;
 							redirects++;
 							request.setAttempts(0);
-							return dispatchRequest(request);
+							return dispatchRequest(request, "SSL redirect requested", true);
 						}
 						redirects++;
 						request.setAttempts(0);
@@ -362,10 +358,9 @@ public class HttpClient implements AutoCloseable {
 			} else if (rr.getResponseStatus().getHttpCode().isClientError()) {
 				if (rr.getResponseStatus().getHttpCode() == HTTPCode.BAD_REQUEST) {
 					if (!ssl && request.getUrl().startsWith("https")) {
-						ssl = true;
 						redirects++;
 						request.setAttempts(0);
-						return dispatchRequest(request);
+						return dispatchRequest(request, "Bad request, trying with SSL", true);
 					}
 				}
 				if (rr.getResponseStatus().getHttpCode() == HTTPCode.TOO_MANY_REQUESTS) {
@@ -420,14 +415,16 @@ public class HttpClient implements AutoCloseable {
 	 * 
 	 * @param request The request.
 	 * 
+	 * @param ssl Whether to enforce SSL or not.
+	 * 
 	 * @return The new request response.
 	 */
-	private RequestResponse handleRequestException(String message, Exception ex, String host, Request request) {
-		if (NetConfig.getConfig().isDebug()) {
+	private RequestResponse handleRequestException(String message, Exception ex, String host, Request request, boolean ssl) {
+		//if (NetConfig.getConfig().isDebug()) {
 			ex.printStackTrace();
-		}
+		//}
 		System.err.println(message + " (" + host + ") [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
-		return dispatchRequest(request, message + " (" + host + ") [" + request.getRequestType().getName() + " => " + request.getUrl() + "]");
+		return dispatchRequest(request, message + " (" + host + ") [" + request.getRequestType().getName() + " => " + request.getUrl() + "]", ssl);
 	}
 	
 	/**

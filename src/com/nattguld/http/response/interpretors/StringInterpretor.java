@@ -1,8 +1,8 @@
 package com.nattguld.http.response.interpretors;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,7 +66,7 @@ public class StringInterpretor extends ResponseInterpretor<StringResponseBody> {
 	}
 
 	@Override
-	public StringResponseBody interpret(InputStream in) throws IOException {
+	public StringResponseBody interpret(BufferedInputStream bis) throws IOException {
 		IResponseDecoder decoder = Objects.nonNull(contentEncoding) ? decoders.get(contentEncoding) : null;
 
 		if (NetConfig.getConfig().isDebug()) {
@@ -74,7 +74,7 @@ public class StringInterpretor extends ResponseInterpretor<StringResponseBody> {
 		}
 		StringBuilder sb = new StringBuilder();
 		
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(Objects.isNull(decoder) ? in : decoder.decode(in), "UTF-8"))) {
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(Objects.isNull(decoder) ? bis : decoder.decode(bis), "UTF-8"))) {
 			byte b = 0;
 	
 			while ((b = (byte)br.read()) != -1) {
@@ -89,7 +89,7 @@ public class StringInterpretor extends ResponseInterpretor<StringResponseBody> {
 		if (NetConfig.getConfig().isDebug()) {
 			System.out.println("Body interpretation successfull");
 		}
-		return new StringResponseBody(sb.toString());
+		return new StringResponseBody(new String(sb.toString().getBytes(), "UTF-8"));
 	}
 
 }
