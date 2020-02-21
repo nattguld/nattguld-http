@@ -1,11 +1,15 @@
 package com.nattguld.http.sec;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.nattguld.http.HttpClient;
 import com.nattguld.http.requests.Request;
 import com.nattguld.http.response.RequestResponse;
+import com.nattguld.http.util.NetUtil;
 
 /**
  * 
@@ -18,33 +22,58 @@ public class ConnectionSecurityHandler {
 	/**
 	 * The security implementations.
 	 */
-	private final List<ConnectionSecurity> conSecImplementations = new ArrayList<>();
+	private static Map<ConnectionSecurity, String> conSecImplementations = new HashMap<>();
 	
 	
 	/**
-	 * Adds a connection security implementation.
+	 * Registers a connection security implementation for a given domain.
+	 * 
+	 * @param conSec The connection security implementation.
+	 * 
+	 * @param domain The domain.
 	 */
-	public void add(ConnectionSecurity conSec) {
-		conSecImplementations.add(conSec);
+	public static void register(ConnectionSecurity conSec, String domain) {
+		conSecImplementations.put(conSec, domain);
 	}
 	
 	/**
-	 * Attempts to bypass a connection security implementation if present.
+	 * Retrieves the implementations for a given domain.
 	 * 
-	 * @param c The http client.
+	 * @param domain The domain.
 	 * 
-	 * @param request The request.
-	 * 
-	 * @param The request response.
-	 * 
-	 * @return The result.
+	 * @return The implementations.
 	 */
-	public boolean bypass(HttpClient c, Request r, RequestResponse rr) {
-		if (!hasImplementations()) {
-			System.err.println("No connection security implementations found");
+	private static List<ConnectionSecurity> getImplementations(String domain) {
+		List<ConnectionSecurity> implementations = new ArrayList<>();
+		
+		for (Entry<ConnectionSecurity, String> entry : conSecImplementations.entrySet()) {
+			if (entry.getValue().equalsIgnoreCase(domain)) {
+				implementations.add(entry.getKey());
+			}
+		}
+		return implementations;
+	}
+	
+	/**
+	 * Attempts to bypass security.
+	 * 
+	 * @param c The client session.
+	 * 
+	 * @param r The request.
+	 * 
+	 * @param rr The request response after initial request without attempting to bypass security.
+	 * 
+	 * @return Whether the bypass was successful or not.
+	 */
+	public static boolean bypass(HttpClient c, Request r, RequestResponse rr) {
+		String domain = NetUtil.getDomain(r.getUrl());
+		
+		List<ConnectionSecurity> implementations = getImplementations(domain);
+		
+		if (implementations.isEmpty()) {
 			return true;
 		}
-		for (ConnectionSecurity conSec : conSecImplementations) {
+		for (ConnectionSecurity conSec : implementations) {
 			try {
 				if (!conSec.encountered(c, r, rr)) {
 					continue;
@@ -67,15 +96,6 @@ public class ConnectionSecurityHandler {
 			}
 		}
 		return true;
-	}
-
-	/**
-	 * Retrieves whether the security handler has implementations or not.
-	 * 
-	 * @return The result.
-	 */
-	public boolean hasImplementations() {
-		return !conSecImplementations.isEmpty();
 	}
 
 }

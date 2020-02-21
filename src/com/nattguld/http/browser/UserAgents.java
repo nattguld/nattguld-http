@@ -69,6 +69,10 @@ public class UserAgents {
     		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299",
     		"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36 Edge/15.15063",
     		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134",
+    		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36",
+    		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36",
+    		"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+    		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
 	};
 	
 	/**
@@ -110,10 +114,11 @@ public class UserAgents {
 	 * The possible ios versions.
 	 */
 	private static final Object[][] IOS_VERSION = {
-			{"12_2", 86.2},
-			{"11_4_1", 7.4},
-			{"10_3_3", 2.3},
-			{"9_3_5", 4.0},
+			{"13_3", 89.5},
+			{"12_4_4", 8.3},
+			{"11_4_1", 1.4},
+			{"10_3_3", 0.7},
+			{"9_3_5", 0.1},
 	};
 	
 	/**

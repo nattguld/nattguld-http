@@ -8,6 +8,7 @@ package com.nattguld.http.content;
 
 public enum EncType {
 	
+	PLAIN_JSON("Plain Json", "application/json", "application/json"),
 	JSON("Json", "application/json", "application/json, text/javascript, */*; q=0.01"),
 	XML("XML", "text/xml;charset=utf-8", "text/xml, application/xml, text/javascript, */*; q=0.01"),
 	URL_ENCODED("URL encoded", "application/x-www-form-urlencoded; charset=UTF-8", "text/html,application/xhtml+xml,application/xml;q=0.9, image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"),

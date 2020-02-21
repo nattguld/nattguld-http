@@ -34,6 +34,11 @@ public abstract class ContentBody<T> {
 	 */
 	private ChunkHandler chunkHandler;
 	
+	/**
+	 * Whether the body should get url encoded or not.
+	 */
+	private boolean urlEncoded;
+	
 	
 	/**
 	 * Creates a new content body.
@@ -148,6 +153,27 @@ public abstract class ContentBody<T> {
 	 */
 	public ChunkHandler getChunkHandler() {
 		return chunkHandler;
+	}
+	
+	/**
+	 * Modifies whether the body should get url encoded or not.
+	 * 
+	 * @param urlEncoded The new state.
+	 * 
+	 * @return The content body.
+	 */
+	public ContentBody<?> setUrlEncoded(boolean urlEncoded) {
+		this.urlEncoded = urlEncoded;
+		return this;
+	}
+	
+	/**
+	 * Retrieves whether the body should get url encoded or not.
+	 * 
+	 * @return The result.
+	 */
+	public boolean isUrlEncoded() {
+		return urlEncoded;
 	}
 	
 	/**

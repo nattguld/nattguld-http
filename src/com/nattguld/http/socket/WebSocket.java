@@ -34,13 +34,12 @@ public class WebSocket {
 		OutputStream out = tunnel.getOutputStream();
 		PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), true);
 	        
-		writer.println("GET ws://recommend.chaturbate.com:8443/ws HTTP/1.1");
-		writer.println("Host: server.example.com");
+		writer.println("GET ws://keepalive.gotinder.com/ws?token=77c50251-c97d-4013-b3cb-f5045ceda4a7 HTTP/1.1");
+		writer.println("Host: keepalive.gotinder.com");
 		writer.println("Upgrade: websocket");
 		writer.println("Connection: Upgrade");
-		writer.println("Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==");
-		writer.println("Origin: http://example.com");
-		writer.println("Sec-WebSocket-Protocol: chat, superchat");
+		writer.println("Sec-WebSocket-Key: hF+Y+K/fwkH+GyVvzMg5cg==");
+		writer.println("Origin: https://tinder.com");
 		writer.println("Sec-WebSocket-Version: 13");
 	        
 	        if (Objects.nonNull(proxy) && proxy.hasAuthentication()) {

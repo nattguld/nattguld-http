@@ -66,6 +66,9 @@ public class ProxyConfig extends Config {
 			
 			if (Objects.nonNull(datacenterGateway)) {
 				for (RotatingProxyBackup rrp : datacenterGateway.getGateways()) {
+					if (Objects.isNull(rrp)) {
+						continue;
+					}
 					RotatingProxy rp = new RotatingProxy(InternetConnectionType.DATACENTER, rrp.getCooldown(), new LocalProxyConfig(datacenterGateway.getMaxParallel()), rrp.getHost(), rrp.getPort());
 					RotatingProxyManager.getSingleton().add(rp);
 				}

@@ -114,7 +114,7 @@ public class Browser {
 		this.doNotTrack = NetConfig.getConfig().isDoNotTrack();
 		this.debug = NetConfig.getConfig().isDebug();
 		this.httpVersion = HttpVersion.HTTP_1_1;
-		this.connectionAttempts = 6;
+		this.connectionAttempts = 3;
 	}
 	
 	/**

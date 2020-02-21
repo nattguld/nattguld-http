@@ -30,6 +30,11 @@ public class RequestResponse {
 	private final String endpoint;
 	
 	/**
+	 * The expected response code.
+	 */
+	private final int expectedCode;
+	
+	/**
 	 * The response status.
 	 */
 	private final ResponseStatus responseStatus;
@@ -60,14 +65,17 @@ public class RequestResponse {
      * 
      * @param endpoint The endpoint url.
      * 
+     * @param expectedCode The expected response code.
+     * 
      * @param responseStatus The response status.
      * 
      * @param responseBody The response body.
      * 
      * @param headers The response headers.
      */
-	public RequestResponse(String endpoint, ResponseStatus responseStatus, IResponseBody<?> responseBody, Headers headers) {
+	public RequestResponse(String endpoint, int expectedCode, ResponseStatus responseStatus, IResponseBody<?> responseBody, Headers headers) {
 		this.endpoint = endpoint;
+		this.expectedCode = expectedCode;
 		this.responseStatus = responseStatus;
 		this.responseBody = responseBody;
 		this.headers = headers;
@@ -88,7 +96,7 @@ public class RequestResponse {
      * @return The validation result.
      */
     public boolean validate() {
-    	return validate(200);
+    	return validate(expectedCode);
     }
     
     /**
@@ -214,8 +222,17 @@ public class RequestResponse {
      * @return The json element.
      */
     public JsonReader getJsonReader() {
+    	return getJsonReader(false);
+    }
+    
+    /**
+     * Retrieves the response content as json element.
+     * 
+     * @return The json element.
+     */
+    public JsonReader getJsonReader(boolean disableHtmlEscaping) {
     	if (Objects.isNull(jsonReader)) {
-    		jsonReader = ResourceIO.loadJsonFromString(getResponseContent());
+    		jsonReader = ResourceIO.loadJsonFromString(getResponseContent(), disableHtmlEscaping);
     	}
     	return jsonReader;
     }

@@ -340,25 +340,97 @@ public enum PhoneBrand {
 	/**
 	 * Retrieves a random model.
 	 * 
+	 * @param osVersion The OS version.
+	 * 
 	 * @return The model.
 	 */
-	public String getRandomModel(String version) {
+	public String getRandomModel(String osVersion) {
 		List<String> filters = new ArrayList<>();
 		
 		for (int i = 0; i < models.length; i++) {
 			String modelOsVersion = (String)models[i][0];
 			String modelName = (String)models[i][1];
 			
-			if (!modelOsVersion.equals(version)) {
+			if (!modelOsVersion.equals(osVersion)) {
 				continue;
 			}
 			filters.add(modelName);
 		}
 		if (filters.isEmpty()) {
-			System.err.println("[" + getName() + "]: No model found for os version: " + version);
-			return PhoneBrand.SAMSUNG.getRandomModel(version);
+			System.err.println("[" + getName() + "]: No model found for os version: " + osVersion);
+			return PhoneBrand.SAMSUNG.getRandomModel(osVersion);
 		}
 		return filters.get(Maths.random(filters.size()));
+	}
+	
+	/**
+	 * Retrieves the android API level.
+	 * 
+	 * @param osVersion The OS version.
+	 * 
+	 * @return The API level.
+	 */
+	public int getApiLevel(String osVersion) {
+		if (osVersion.startsWith("10")) {
+			return 29;
+		} else if (osVersion.startsWith("9")) {
+			return 28;
+		} else if (osVersion.startsWith("8.1.0")) {
+			return 27;
+		} else if (osVersion.startsWith("8.0.0")) {
+			return 26;
+		} else if (osVersion.startsWith("7.1")) {
+			return 25;
+		} else if (osVersion.startsWith("7.0")) {
+			return 24;
+		} else if (osVersion.startsWith("6.0")) {
+			return 23;
+		} else if (osVersion.startsWith("5.1")) {
+			return 22;
+		} else if (osVersion.startsWith("5.0")) {
+			return 21;
+		} else if (osVersion.startsWith("4.4")) {
+			return 19;
+		} else if (osVersion.startsWith("4.3")) {
+			return 18;
+		} else if (osVersion.startsWith("4.2")) {
+			return 17;
+		} else if (osVersion.startsWith("4.1")) {
+			return 16;
+		} else if (osVersion.startsWith("4.0.3") || osVersion.startsWith("4.0.4")) {
+			return 15;
+		} else if (osVersion.startsWith("4.0.1") || osVersion.startsWith("4.0.2")) {
+			return 14;
+		} else if (osVersion.startsWith("3.2")) {
+			return 13;
+		} else if (osVersion.startsWith("3.1")) {
+			return 12;
+		} else if (osVersion.startsWith("3.0")) {
+			return 11;
+		} else if (osVersion.startsWith("2.3.3") || osVersion.startsWith("2.3.4")
+				|| osVersion.startsWith("2.3.5") || osVersion.startsWith("2.3.6")
+				|| osVersion.startsWith("2.3.7")) {
+			return 10;
+		} else if (osVersion.startsWith("2.3")) {
+			return 9;
+		} else if (osVersion.startsWith("2.2")) {
+			return 8;
+		} else if (osVersion.startsWith("2.1")) {
+			return 7;
+		} else if (osVersion.startsWith("2.0.1")) {
+			return 6;
+		} else if (osVersion.startsWith("2.0")) {
+			return 5;
+		} else if (osVersion.startsWith("1.6")) {
+			return 4;
+		} else if (osVersion.startsWith("1.5")) {
+			return 3;
+		} else if (osVersion.startsWith("1.1")) {
+			return 2;
+		} else if (osVersion.startsWith("1.0")) {
+			return 1;
+		}
+		return 30;
 	}
 	
 	/**

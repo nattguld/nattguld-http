@@ -5,6 +5,9 @@ import java.util.Objects;
 import com.nattguld.http.DataCounter;
 import com.nattguld.http.content.EncType;
 import com.nattguld.http.headers.Headers;
+import com.nattguld.http.requests.execute.IRequestPostExecuteHandler;
+import com.nattguld.http.requests.execute.RequestProgressListener;
+import com.nattguld.http.response.RequestResponse;
 
 /**
  * 
@@ -70,6 +73,11 @@ public abstract class Request {
 	private RequestProgressListener progressListener;
 	
 	/**
+	 * The post execution handler.
+	 */
+	private IRequestPostExecuteHandler postExecuteHandler;
+	
+	/**
 	 * Whether to decode the body or not.
 	 */
 	private boolean decodeBody;
@@ -77,7 +85,14 @@ public abstract class Request {
 	/**
 	 * The port.
 	 */
-	private int port = 80;
+	private int port;
+	
+	/**
+	 * The security fetch mode header value.
+	 */
+	private String secFetchMode;
+	
+	private boolean noSSL;
 	
 	
 	/**
@@ -99,6 +114,21 @@ public abstract class Request {
 		this.responseEncType = EncType.URL_ENCODED;
 		this.decodeBody = true;
 		this.dataCounter = new DataCounter();
+		this.port = 80;
+		this.secFetchMode = "navigate";
+		this.postExecuteHandler = new IRequestPostExecuteHandler() {
+			@Override
+			public void onSuccess(Request request, RequestResponse rr) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onFail(Request request, RequestResponse rr) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
 	}
 	
 	/**
@@ -144,6 +174,15 @@ public abstract class Request {
 		return headers;
 	}
 	
+	public Request setNoSSL(boolean noSSL) {
+		this.noSSL = noSSL;
+		return this;
+	}
+	
+	public boolean isNoSSL() {
+		return noSSL;
+	}
+	
 	/**
 	 * Modifies the response encoding type.
 	 * 
@@ -174,6 +213,7 @@ public abstract class Request {
 	 */
 	public Request setXMLHttpRequest(boolean xmlHttpRequest) {
 		this.xmlHttpRequest = xmlHttpRequest;
+		this.secFetchMode = "cors";
 		return this;
 	}
 	
@@ -184,6 +224,27 @@ public abstract class Request {
 	 */
 	public boolean isXMLHttpRequest() {
 		return xmlHttpRequest;
+	}
+	
+	/**
+	 * Modifies the security fetch mode header value.
+	 * 
+	 * @param secFetchMode The new value.
+	 * 
+	 * @return The request.
+	 */
+	public Request setSecFetchMode(String secFetchMode) {
+		this.secFetchMode = secFetchMode;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the security fetch mode header value.
+	 * 
+	 * @return The value.
+	 */
+	public String getSecFetchMode() {
+		return secFetchMode;
 	}
 	
 	/**
@@ -281,6 +342,27 @@ public abstract class Request {
 	 */
 	public RequestProgressListener getProgressListener() {
 		return progressListener;
+	}
+	
+	/**
+	 * Modifies the post execute handler.
+	 * 
+	 * @param postExecuteHandler The new post execute handler.
+	 * 
+	 * @return The request.
+	 */
+	public Request setPostExecuteHandler(IRequestPostExecuteHandler postExecuteHandler) {
+		this.postExecuteHandler = postExecuteHandler;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the post execute handler.
+	 * 
+	 * @return The post execute handler.
+	 */
+	public IRequestPostExecuteHandler getPostExecuteHandler() {
+		return postExecuteHandler;
 	}
 	
 	/**

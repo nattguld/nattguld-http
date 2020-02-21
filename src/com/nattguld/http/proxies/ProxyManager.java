@@ -1,5 +1,7 @@
 package com.nattguld.http.proxies;
 
+
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -33,6 +35,11 @@ public abstract class ProxyManager extends JsonResourceManager<HttpProxy> {
 	 * The fiddler proxy.
 	 */
 	public static final HttpProxy FIDDLER_PROXY = new HttpProxy("127.0.0.1", 8888);
+	
+	/**
+	 * Represents a local host proxy.
+	 */
+	public static final HttpProxy LOCALHOST = new HttpProxy("localhost", 80);
 
 	
 	static {
@@ -47,6 +54,9 @@ public abstract class ProxyManager extends JsonResourceManager<HttpProxy> {
 	 * @return The proxy.
 	 */
 	public HttpProxy addOrRetrieve(HttpProxy proxy) {
+		if (Objects.isNull(proxy)) {
+			return null;
+		}
 		add(proxy);
 		return getProxyByAddress(proxy.toString());
 	}
@@ -59,6 +69,19 @@ public abstract class ProxyManager extends JsonResourceManager<HttpProxy> {
 				return Objects.isNull(getProxyByAddress(proxy.toString()));
 			}
 		});
+	}
+	
+	/**
+	 * Retrieves a proxy by it's host.
+	 * 
+	 * @param host The host.
+	 * 
+	 * @return The proxy.
+	 */
+	public HttpProxy getProxyByHost(String host) {
+		return getResources().stream()
+				.filter(p -> p.getHost().equals(host))
+				.findFirst().orElse(null);
 	}
 
 	/**
@@ -96,6 +119,9 @@ public abstract class ProxyManager extends JsonResourceManager<HttpProxy> {
 			System.err.println("[ProxyManager] Unable to parse proxy: empty input");
 			return null;
 		}
+		if (trim.equalsIgnoreCase("localhost")) {
+			return LOCALHOST;
+		}
 		if (!trim.contains(":")) {
 			System.err.println("[ProxyManager] Unable to parse proxy: invalid format");
 			return null;
@@ -108,7 +134,12 @@ public abstract class ProxyManager extends JsonResourceManager<HttpProxy> {
 		}
 		String host = parts[0].trim();
 
-		if (host.split("\\.").length != 4) {
+		if (host.equalsIgnoreCase("localhost")) {
+			return LOCALHOST;
+		}
+		int hostPartsSize = host.split("\\.").length;
+		
+		if (hostPartsSize < 2 || hostPartsSize > 4) {
 			System.err.println("[ProxyManager] Unable to parse proxy: invalid host");
 			return null;
 		}
@@ -194,6 +225,22 @@ public abstract class ProxyManager extends JsonResourceManager<HttpProxy> {
 			return ProxyChoice.ROTATING_DATACENTER;
 		}
 		return ProxyChoice.DIRECT;
+	}
+	
+	/**
+	 * Retrieves a proxy as a java proxy.
+	 * 
+	 * @param proxy The proxy.
+	 * 
+	 * @return The java proxy.
+	 */
+	public static java.net.Proxy toJavaProxy(HttpProxy proxy) {
+		if (proxy == INVALID_PROXY || proxy == LOCALHOST) {
+			return java.net.Proxy.NO_PROXY;
+		}
+		return new java.net.Proxy((proxy.getType() == ProxyType.HTTP || proxy.getType() == ProxyType.HTTPS) 
+				? java.net.Proxy.Type.HTTP : java.net.Proxy.Type.SOCKS
+						, new InetSocketAddress(proxy.getHost(), proxy.getPort()));
 	}
 	
 	/**

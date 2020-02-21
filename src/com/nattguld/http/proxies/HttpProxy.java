@@ -1,7 +1,6 @@
 package com.nattguld.http.proxies;
 
 import java.io.File;
-import java.net.InetSocketAddress;
 import java.util.Objects;
 
 import com.nattguld.data.json.JsonReader;
@@ -284,19 +283,9 @@ public class HttpProxy extends JsonResource {
 		return Objects.nonNull(getAuthCreds());
 	}
 	
-	/**
-	 * Retrieves a java.net proxy version of the proxy.
-	 * 
-	 * @return The java.net Proxy.
-	 */
-	public java.net.Proxy toJavaProxy() {
-		return new java.net.Proxy((getType() == ProxyType.HTTP || getType() == ProxyType.HTTPS) ? java.net.Proxy.Type.HTTP : java.net.Proxy.Type.SOCKS
-				, new InetSocketAddress(getHost(), getPort()));
-	}
-	
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof HttpProxy && ((HttpProxy)other).getUUID().equals(getUUID());
+		return Objects.nonNull(other) && other instanceof HttpProxy && ((HttpProxy)other).getUUID().equals(getUUID());
 	}
 	
 	@Override

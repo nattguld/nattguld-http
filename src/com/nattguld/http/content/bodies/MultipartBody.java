@@ -14,6 +14,7 @@ import com.nattguld.http.content.ContentBody;
 import com.nattguld.http.content.EncType;
 import com.nattguld.http.headers.Headers;
 import com.nattguld.http.stream.HTTPOutputStream;
+import com.nattguld.util.files.FileOperations;
 import com.nattguld.util.files.MimeType;
 import com.nattguld.util.generics.kvps.impl.AttributeKeyValuePair;
 import com.nattguld.util.text.TextSeed;
@@ -35,12 +36,22 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 	/**
 	 * The multipart boundary.
 	 */
-	private final String boundary;
+	private String boundary;
 	
 	/**
 	 * The total file size in the body.
 	 */
 	private int fileSize;
+	
+	/**
+	 * Whether to use no media extension when adding media files.
+	 */
+	private boolean noMediaExtension;
+	
+	/**
+	 * The custom media content type.
+	 */
+	private String customMediaContentType;
 
 	
 	/**
@@ -157,6 +168,40 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 	}
 	
 	/**
+	 * Modifies the boundary.
+	 * 
+	 * @return The multipart body.
+	 */
+	public MultipartBody setBoundary(String boundary) {
+		this.boundary = boundary;
+		return this;
+	}
+	
+	/**
+	 * Modifies whether to add the media extension to media files or not.
+	 * 
+	 * @param noMediaExtension The new state.
+	 * 
+	 * @return The multipart body.
+	 */
+	public MultipartBody setNoMediaExtension(boolean noMediaExtension) {
+		this.noMediaExtension = noMediaExtension;
+		return this;
+	}
+	
+	/**
+	 * Modifies the custom media content type.
+	 * 
+	 * @param customMediaContentType The new custom media content type.
+	 * 
+	 * @return The multipart body.
+	 */
+	public MultipartBody setCustomMediaContentType(String customMediaContentType) {
+		this.customMediaContentType = customMediaContentType;
+		return this;
+	}
+	
+	/**
 	 * Writes a string entry.
 	 * 
 	 * @param httpStream The HTTP output stream.
@@ -189,8 +234,14 @@ public class MultipartBody extends ContentBody<List<AttributeKeyValuePair>> {
 	 * @throws IOException 
 	 */
 	protected void writeFilePart(HTTPOutputStream httpStream, boolean prepare, String key, File value) throws IOException {
-		httpStream.writeLine("Content-Disposition: form-data; name=\"" + key + "\"; filename=\"" + value.getName() + "\"");
-		httpStream.writeLine("Content-Type: " + MimeType.getByFile(value).getName());
+		String fileName = value.getName();
+		
+		if (noMediaExtension) {
+			String ext = "." + FileOperations.getExtension(value);
+			fileName = fileName.substring(0, fileName.indexOf(ext));
+		}
+		httpStream.writeLine("Content-Disposition: form-data; name=\"" + key + "\"; filename=\"" + fileName + "\"");
+		httpStream.writeLine("Content-Type: " + (Objects.nonNull(customMediaContentType) ? customMediaContentType : MimeType.getByFile(value).getName()));
 		
 		if (!isChunked()) {
 			httpStream.writeLine("Content-Transfer-Encoding: binary");

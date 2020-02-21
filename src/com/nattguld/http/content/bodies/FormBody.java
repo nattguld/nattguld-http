@@ -1,6 +1,7 @@
 package com.nattguld.http.content.bodies;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
@@ -84,7 +85,9 @@ public class FormBody extends ContentBody<List<AttributeKeyValuePair>> {
 			String value = new String(kvp.getValueAsString().getBytes(StandardCharsets.UTF_8));
 				
 			if (!kvp.getKey().isEmpty()) {
-				httpStream.writeString(kvp.getKey() + "=" + value);
+				String key = isUrlEncoded() ? URLEncoder.encode(kvp.getKey(), "UTF-8") : kvp.getKey();
+				value = isUrlEncoded() ? URLEncoder.encode(value, "UTF-8") : value;
+				httpStream.writeString(key + "=" + value);
 			}
 			if (++index < kvps.size()) {
 				httpStream.writeString("&");
